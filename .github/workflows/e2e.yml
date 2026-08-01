@@ -1,0 +1,28 @@
+name: Cross-browser E2E
+
+# The deploy gate runs the axe scan and the Chromium flows, because that workflow
+# installs only Chromium. Firefox and WebKit regressions are caught here instead, on
+# the same specs, so the deploy file can stay byte-for-byte what the fleet template
+# specifies.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install all Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Every project — axe plus flows on Chromium, Firefox and WebKit
+        run: npm run test:e2e:all

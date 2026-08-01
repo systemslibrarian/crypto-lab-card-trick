@@ -1,0 +1,840 @@
+/* Card Trick — theme + component styles.
+   Dark is the default (:root); light overrides live under :root[data-theme="light"].
+   The always-dark shared top bar owns its own styles; base element rules here are
+   scoped to #app so they never fight it.
+
+   Every text/background pair below was checked against WCAG 2.1 AA (>=4.5:1 body,
+   >=3:1 large text and UI components). Muted text lowers the colour's lightness
+   rather than using opacity, and verdict tints are explicit colours rather than
+   color-mix() so their contrast is verifiable rather than approximate.
+
+   The card faces are deliberately the SAME in both themes: a playing card does not
+   change colour when the lights go down, and inverting one would quietly break the
+   only thing the protocol asks of a deck. Their inks are their own tokens so the
+   contrast is checked rather than inherited. */
+
+:root {
+  color-scheme: dark;
+  --bg: #14100f;
+  --surface: #1f1917;
+  --surface-2: #2a221f;
+  --border: #443733;
+  --text: #ece3e0;
+  --text-dim: #b8aaa6; /* muted via lower lightness, never opacity */
+  --accent: #ef4444; /* brand accent — also read by the shared header */
+  --accent-ink: #1c0505; /* text on an accent fill (5.2:1) */
+  /* Lighter than --accent on purpose: --accent itself only reaches 4.1:1 on
+     --surface-2, which is the background of the term asides and bridges where this
+     token is used as body-sized text. */
+  --accent-text: #f77070; /* 6.5:1 on --bg, 5.6:1 on --surface-2 */
+  --accent-tint: #201413; /* accent-flavoured panel background */
+  --ok: #4ac26b;
+  --ok-text: #7ee29a;
+  --ok-bg: #14251a;
+  --bad: #f0544c;
+  --bad-text: #ff8f87;
+  --bad-bg: #2a1614;
+  --alarm: #e2a03c;
+  --alarm-text: #f0be6e;
+  --alarm-bg: #2a2014;
+
+  /* Cards. Theme-independent by design. */
+  --card-face: #f7f4f0;
+  --card-edge: #8d827c;
+  --card-ink-spade: #16181d; /* 16.3:1 on the face */
+  --card-ink-heart: #b3122b; /* 6.3:1 on the face */
+  --card-back: #7a1620;
+  --card-back-line: #b9505a;
+
+  /* Chart series. Validated for CVD separation against this surface. */
+  --series-cards: #ef4444;
+  --series-circuit: #3f86e0;
+
+  --radius: 10px;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #faf7f6;
+  --surface: #ffffff;
+  --surface-2: #f2eae8;
+  --border: #d9c9c5;
+  --text: #1d1715;
+  --text-dim: #5a4f4c;
+  --accent: #ef4444;
+  --accent-ink: #1c0505;
+  --accent-text: #b91c1c; /* darker so links/headings stay AA on a light bg (6.5:1) */
+  --accent-tint: #fdf1f0;
+  --ok: #1a7f37;
+  --ok-text: #14682c;
+  --ok-bg: #e8f5ea;
+  --bad: #cf222e;
+  --bad-text: #b3261e;
+  --bad-bg: #fdeceb;
+  --alarm: #8a5a10;
+  --alarm-text: #7a4f0d;
+  --alarm-bg: #fbf1de;
+
+  --series-cards: #c62828;
+  --series-circuit: #1a56db;
+}
+
+html {
+  background-color: var(--bg); /* longhand — axe/WebKit miss the shorthand */
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.55;
+}
+
+/* The `hidden` attribute hides via the UA stylesheet's `display:none`, which ANY
+   author `display` rule silently defeats. Make the attribute authoritative so hiding
+   something never depends on it having no layout rules of its own. */
+#app [hidden] {
+  display: none !important;
+}
+
+/* Reaches a screen reader, never the screen. Deliberately not `display: none`,
+   which would hide it from assistive technology as well. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+#app {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 clamp(0.9rem, 3vw, 2rem) 3rem;
+}
+
+#app a {
+  color: var(--accent-text);
+  text-decoration: underline; /* persistent underline, not colour alone */
+  text-underline-offset: 2px;
+}
+#app code {
+  font-family: var(--mono);
+}
+#app :is(button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+#app h2,
+#app h3,
+#app h4 {
+  color: var(--text);
+}
+
+/* ---------- hero (managed cl-hero standard) ---------- */
+/* BEGIN cl-hero standard — managed, keep in sync across fleet */
+.cl-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:clamp(1rem,4vw,3rem);flex-wrap:wrap;margin:clamp(1rem,3vw,2rem) 0 1.5rem;}
+.cl-hero-main{flex:1 1 22rem;min-width:min(100%,20rem);}
+.cl-hero-title{margin:0;font-size:clamp(1.6rem,3.8vw,2.7rem);font-weight:700;line-height:1.1;letter-spacing:.01em;}
+.cl-hero-sub{margin:.4rem 0 0;font-size:clamp(.9rem,1.6vw,1.05rem);letter-spacing:.01em;opacity:.85;}
+.cl-hero-desc{margin:.55rem 0 0;font-size:1rem;line-height:1.5;color:var(--text-dim);max-width:60ch;}
+.cl-hero-why{flex:0 1 min(40%,26rem);min-width:min(100%,15rem);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.05rem;background:color-mix(in oklab,var(--accent) 6%,transparent);}
+.cl-hero-why-label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.14em;}
+.cl-hero-why-text{margin:.35rem 0 0;font-size:.95rem;line-height:1.5;}
+@media (max-width:640px){.cl-hero{flex-direction:column;}.cl-hero-why{flex-basis:auto;width:100%;}}
+/* END cl-hero standard */
+/* Local fixes to the managed block: the 20rem min-width overflows a 320px viewport,
+   and the subtitle's opacity is replaced with an explicit colour so the muted look
+   comes from lightness (AA-checkable) rather than transparency. */
+.cl-hero-why { box-sizing: border-box; background: var(--accent-tint); }
+@media (max-width: 640px) { .cl-hero-main { min-width: 0; } }
+.cl-hero-sub { color: var(--accent-text); opacity: 1; }
+.cl-hero-why-label { color: var(--accent-text); }
+
+/* ---------- guided tour ---------- */
+.tour-invite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  margin: 0 0 1.25rem;
+}
+.tour-invite-main { flex: 1 1 22rem; }
+.tour-invite-title { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.tour-invite-promise { margin: 0.35rem 0 0; color: var(--text-dim); font-size: 0.95rem; max-width: 66ch; }
+.tour-invite-actions { display: grid; gap: 0.35rem; justify-items: start; }
+.tour-start-btn { font-size: 0.95rem; padding: 0.6rem 1.1rem; }
+
+.tour-bar {
+  position: sticky;
+  top: 3.6rem; /* clears the shared top bar */
+  z-index: 5;
+  display: grid;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  margin: 0 0 1.25rem;
+}
+.tour-head { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.tour-tag { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: var(--accent-text); }
+.tour-label { font-weight: 700; font-size: 0.98rem; }
+.tour-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-left: auto; }
+.tour-blurb { margin: 0; color: var(--text-dim); font-size: 0.92rem; max-width: 78ch; }
+.tour-dots { display: flex; gap: 0.3rem; }
+.tour-dot { width: 1.4rem; height: 0.28rem; border-radius: 999px; background: var(--border); }
+.tour-dot-done { background: var(--accent-text); }
+.tour-dot-now { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-tint); }
+
+/* ---------- tabs ---------- */
+.tabs { margin: 0.5rem 0 1.25rem; }
+.tab-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.tab-btn {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+.tab-btn:hover { color: var(--text); background: var(--surface-2); }
+.tab-btn.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.tab-btn.tab-done { color: var(--ok-text); }
+.tab-btn.tab-done.active { color: var(--accent-ink); }
+.tab-tick { font-weight: 700; }
+
+/* ---------- panels & sections ---------- */
+.panel-intro h2 { font-size: 1.35rem; margin: 0 0 0.5rem; }
+.panel-intro p { color: var(--text-dim); margin: 0 0 0.7rem; max-width: 72ch; }
+.panel-sub { color: var(--text-dim); font-size: 0.93rem; margin: 0 0 0.4rem; max-width: 74ch; }
+.section-h { font-size: 1.1rem; margin: 1.4rem 0 0.6rem; }
+
+.aha, .break-it, .compare-block, .kat-group, .transfer {
+  display: grid;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1.1rem 0;
+}
+.aha { border-color: var(--accent); }
+.aha-clean { border-color: var(--ok); }
+.aha-broken { border-color: var(--alarm); }
+.aha h3, .break-it h3, .compare-block h3, .kat-group h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+.transfer { border-color: var(--accent); gap: 0.9rem; }
+.transfer h2 { margin: 0; font-size: 1.2rem; }
+.transfer h3 { margin: 0.4rem 0 0; font-size: 1rem; }
+
+/* ---------- controls ---------- */
+.controls {
+  display: grid;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  margin: 1rem 0;
+}
+.control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.control { display: grid; gap: 0.4rem; }
+.control > label, .control-label { font-weight: 600; font-size: 0.9rem; }
+.control-inline-row { grid-auto-flow: column; justify-content: start; align-items: center; gap: 0.5rem; }
+.input-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.action-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.preset-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.help { font-size: 0.84rem; color: var(--text-dim); margin: 0.15rem 0 0; max-width: 78ch; }
+.range-value { font-family: var(--mono); font-weight: 700; font-size: 0.95rem; min-width: 3.2em; text-align: right; }
+/* `min-width: 0` because a range input has an intrinsic minimum width in Firefox —
+   without it the slider refuses to shrink inside its grid column and pushes the page
+   a couple of pixels sideways on a 320px screen. */
+input[type="range"] { accent-color: var(--accent); max-width: 16rem; flex: 1 1 8rem; min-width: 0; }
+input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.05rem; }
+
+.weight-grid { display: grid; gap: 0.35rem; }
+.weight-row { display: grid; grid-template-columns: 4.2rem 1fr auto; gap: 0.6rem; align-items: center; font-size: 0.88rem; }
+.weight-row label { font-family: var(--mono); }
+.weight-row input[type="range"] { width: 100%; max-width: none; }
+
+.btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.btn:disabled { cursor: not-allowed; color: var(--text-dim); background: var(--surface-2); }
+.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.07); }
+.btn-primary:disabled { background: var(--surface-2); border-color: var(--border); color: var(--text-dim); }
+.btn-ghost { background: var(--surface-2); color: var(--text); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--accent-text); }
+.preset-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-tint); font-weight: 700; }
+
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: fit-content; }
+.seg-btn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  background: var(--surface);
+  color: var(--text-dim);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+.seg .seg-btn + .seg-btn { border-left: 1px solid var(--border); }
+.seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.seg-wrap { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.seg-wrap .seg-btn { border: 1px solid var(--border); border-radius: 8px; font-family: var(--mono); }
+
+.mono-input {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+/* Specificity, not source order: `.mono-input` sets the `background` SHORTHAND, which
+   would erase the chevron image if this rule were a single class. A styled select
+   without a visible chevron is an a11y-gate failure. */
+.mono-input.styled-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent-text) 50%),
+    linear-gradient(135deg, var(--accent-text) 50%, transparent 50%);
+  background-position: calc(100% - 1.05rem) 55%, calc(100% - 0.7rem) 55%;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+}
+.mono-input.match-ok { border-color: var(--ok); border-width: 2px; }
+.mono-input.match-bad { border-color: var(--bad); border-width: 2px; }
+
+/* ---------- the cards ---------- */
+.card-row { display: flex; gap: 0.45rem; align-items: flex-end; flex-wrap: wrap; }
+.card-row-owned { display: flex; flex-wrap: wrap; gap: 0.9rem; align-items: flex-end; }
+.card-group { display: grid; gap: 0.25rem; }
+.card-group-cards { display: flex; gap: 0.45rem; }
+.card-owner { font-size: 0.72rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.06em; }
+.card-slot { display: grid; gap: 0.25rem; justify-items: center; }
+.card {
+  width: 46px;
+  height: 64px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  background-color: var(--card-face);
+  border: 1px solid var(--card-edge);
+}
+.card-pip { font-size: 1.6rem; line-height: 1; }
+.card-spade .card-pip { color: var(--card-ink-spade); }
+.card-heart .card-pip { color: var(--card-ink-heart); }
+.card-back { background-color: var(--card-back); border-color: var(--card-back-line); }
+.card-back-art {
+  width: 30px;
+  height: 46px;
+  border-radius: 3px;
+  border: 1px solid var(--card-back-line);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--card-back-line) 0 2px,
+    transparent 2px 6px
+  );
+}
+.card-marked { outline: 3px solid var(--accent); outline-offset: 2px; }
+.card-caption { font-size: 0.68rem; color: var(--text-dim); font-weight: 600; }
+
+.encoding { display: flex; flex-wrap: wrap; gap: 1.4rem; }
+.encoding-item { display: flex; align-items: center; gap: 0.6rem; }
+/* Only the first two slots of the shared row helper are meaningful here. */
+.encoding-item .card-slot:nth-child(n + 3) { display: none; }
+.encoding-label { font-weight: 700; font-size: 0.95rem; }
+
+/* ---------- the ring ---------- */
+.ring { width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto; }
+.ring-track { stroke: var(--border); stroke-width: 1.5; }
+.ring-chord { stroke-width: 2.5; stroke-dasharray: 5 4; }
+.ring-chord-adjacent { stroke: var(--ok); }
+.ring-chord-separated { stroke: var(--text-dim); }
+.ring-card-face { fill: var(--card-face); stroke: var(--card-edge); stroke-width: 1; }
+.ring-pip { font-size: 17px; font-family: var(--sans); }
+.ring-card-spade .ring-pip { fill: var(--card-ink-spade); }
+.ring-card-heart .ring-pip { fill: var(--card-ink-heart); }
+.ring-legend { margin: 0.4rem 0 0; font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: baseline; }
+
+.cut-figure { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: center; }
+.cut-side { flex: 1 1 13rem; display: grid; gap: 0.3rem; justify-items: center; text-align: center; }
+.cut-side h4 { margin: 0; font-size: 0.92rem; }
+.cut-arrow { font-size: 1.6rem; color: var(--accent-text); font-weight: 700; }
+
+.readoff { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 0.7rem; }
+.readoff .ring { flex: 0 0 auto; }
+.readoff-text { flex: 1 1 18rem; display: grid; gap: 0.4rem; }
+.output-line { margin: 0; font-size: 1rem; font-weight: 600; }
+.output-bit {
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 6px;
+  padding: 0 0.5rem;
+  margin-left: 0.3rem;
+}
+.both-sides-eq { margin: 0; font-size: 0.9rem; color: var(--text-dim); }
+
+/* ---------- steps ---------- */
+.steps { display: grid; gap: 0.7rem; }
+.step-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem 0.2rem;
+}
+.step-progress { font-size: 0.85rem; color: var(--text-dim); margin-left: auto; }
+.trace-tag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; color: var(--accent-text); }
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+.step-card h3 { margin: 0.15rem 0 0.3rem; font-size: 1.08rem; }
+.step-lead { margin: 0 0 0.7rem; color: var(--text-dim); font-size: 0.92rem; max-width: 72ch; }
+.step-body { display: grid; gap: 0.7rem; }
+.step-note { margin: 0; font-size: 0.9rem; max-width: 76ch; }
+.peek {
+  margin: 0;
+  font-size: 0.86rem;
+  background: var(--surface-2);
+  border-left: 3px solid var(--alarm);
+  border-radius: 0 6px 6px 0;
+  padding: 0.45rem 0.7rem;
+}
+.peek-tag {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--alarm-text);
+}
+
+.cut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 0.7rem; }
+/* Five cards have to stay on one line here — a wrapped row reads as two hands rather
+   than one table, which is the opposite of what this block is demonstrating. */
+.cut-cell .card { width: 38px; height: 53px; }
+.cut-cell .card-pip { font-size: 1.3rem; }
+.cut-cell {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+}
+.cut-cell-label { font-size: 0.78rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.06em; }
+
+/* ---------- orbits ---------- */
+.orbit-section { margin: 1rem 0; }
+.orbit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 0.9rem; }
+.orbit-card {
+  display: grid;
+  gap: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.orbit-adjacent { border-left: 3px solid var(--ok); }
+.orbit-separated { border-left: 3px solid var(--text-dim); }
+.orbit-card h3 { margin: 0; font-size: 1.02rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.orbit-ring { display: grid; gap: 0.2rem; justify-items: center; text-align: center; }
+.orbit-row-btn { font-size: 0.78rem; }
+.escape-out { display: grid; gap: 0.5rem; }
+
+.layout-list { display: grid; gap: 0.7rem; }
+.layout-item { display: grid; gap: 0.25rem; }
+.layout-label { font-family: var(--mono); font-size: 0.8rem; font-weight: 700; color: var(--accent-text); }
+
+/* ---------- verdicts (icon + text + colour) ---------- */
+.verdict {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+.verdict-icon { font-size: 1.05rem; line-height: 1; }
+.verdict-word { font-weight: 700; }
+.verdict-pass { background: var(--ok-bg); border-color: var(--ok); }
+.verdict-pass .verdict-icon, .verdict-pass .verdict-word { color: var(--ok-text); }
+.verdict-fail { background: var(--bad-bg); border-color: var(--bad); }
+.verdict-fail .verdict-icon, .verdict-fail .verdict-word { color: var(--bad-text); }
+.verdict-alarm { background: var(--alarm-bg); border-color: var(--alarm); }
+.verdict-alarm .verdict-icon, .verdict-alarm .verdict-word { color: var(--alarm-text); }
+
+/* ---------- callouts ---------- */
+.callout {
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.88rem;
+  border: 1px solid var(--border);
+  margin: 0.5rem 0;
+  color: var(--text);
+  max-width: 84ch;
+}
+.callout code { background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 4px; }
+.callout-info { background: var(--surface); color: var(--text-dim); }
+.callout-info code { background: var(--surface-2); color: var(--text); }
+.callout-danger { background: var(--bad-bg); border-color: var(--bad); }
+.callout-caveat { background: var(--alarm-bg); border-color: var(--alarm); }
+
+/* ---------- pills & stats ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  /* Flex collapses the trailing space inside the icon span, so the gap has to be
+     layout rather than whitespace or every pill reads "✓reads 1". */
+  gap: 0.25rem;
+  font-weight: 700;
+  font-size: 0.76rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.pill-ok { background: var(--ok-bg); border-color: var(--ok); }
+.pill-bad { background: var(--bad-bg); border-color: var(--bad); }
+.pill-neutral { background: var(--surface-2); }
+
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.6rem; }
+.stat {
+  display: grid;
+  gap: 0.15rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+}
+.stat-label { font-size: 0.74rem; font-weight: 700; color: var(--text-dim); }
+.stat-value { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; line-height: 1.15; }
+.stat-caption { font-size: 0.76rem; color: var(--text-dim); }
+.stat-ok { border-left: 3px solid var(--ok); }
+.stat-ok .stat-value { color: var(--ok-text); }
+.stat-alarm { border-left: 3px solid var(--alarm); }
+.stat-alarm .stat-value { color: var(--alarm-text); }
+.stat-neutral { border-left: 3px solid var(--border); }
+
+/* ---------- fields ---------- */
+.field { display: grid; gap: 0.2rem; }
+.field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); }
+.field-sub { font-weight: 400; }
+.field-value {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
+/* ---------- tables ---------- */
+/* `min-width: 0` is what actually makes `overflow-x: auto` work here: these wrappers
+   are grid items, and a grid item's default `min-width: auto` refuses to shrink below
+   its content — so a twelve-column table pushed the whole page sideways on a phone
+   instead of scrolling inside its own box. */
+.table-wrap {
+  overflow-x: auto;
+  min-width: 0;
+  max-width: 100%;
+  /* `position: relative` is load-bearing, not cosmetic. The `.sr-only` spans inside
+     the wide probability tables are `position: absolute`; without a positioned
+     ancestor their containing block is the page itself, so an overflow container
+     does not clip them and each one at x≈700 stretched the document's scroll area —
+     a horizontally scrolling page on a phone, caused by text nobody can see. */
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.kat-table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
+.kat-table th, .kat-table td {
+  text-align: left;
+  padding: 0.42rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.kat-table thead th { background: var(--surface-2); font-size: 0.78rem; white-space: nowrap; }
+.kat-table tbody tr:last-child td { border-bottom: none; }
+.kat-table code { font-size: 0.78rem; overflow-wrap: anywhere; }
+.kat-table tbody th[scope="row"] { font-weight: 700; white-space: nowrap; }
+.kat-row-one { background: var(--accent-tint); }
+.compare-table td { min-width: 15rem; }
+
+.prob-table .kat-col-row { text-align: center; }
+.prob-cell { text-align: center; font-family: var(--mono); font-size: 0.8rem; }
+.prob-on { background: var(--accent-tint); font-weight: 700; }
+.prob-off { color: var(--text-dim); }
+
+.compare-list { display: grid; gap: 0.4rem; }
+.compare-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.87rem;
+}
+.compare-pair { font-family: var(--mono); font-weight: 700; }
+.compare-note { color: var(--text-dim); }
+
+/* ---------- posterior bars ---------- */
+.bar-list { display: grid; gap: 0.35rem; margin-top: 0.6rem; }
+.bar-row { display: grid; grid-template-columns: 6.5rem 1fr 3.5rem; gap: 0.6rem; align-items: center; font-size: 0.85rem; }
+.bar-label { font-family: var(--mono); }
+.bar-track { background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; height: 0.85rem; overflow: hidden; }
+.bar-fill { display: block; height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.bar-value { font-family: var(--mono); font-weight: 700; text-align: right; }
+.posterior-out { display: grid; gap: 0.5rem; }
+.guess-out { display: grid; gap: 0.6rem; }
+.guess-verdict { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; font-size: 0.88rem; }
+
+/* ---------- the comparison chart ---------- */
+.compare-figure { margin: 0 0 0.8rem; display: grid; gap: 0.5rem; }
+.compare-chart {
+  width: 100%;
+  max-width: 36rem;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-axis { stroke: var(--text-dim); stroke-width: 1.5; }
+.chart-tick, .chart-axis-title { fill: var(--text-dim); font-size: 10px; font-family: var(--mono); }
+.chart-axis-title { font-family: var(--sans); font-size: 11px; }
+.chart-line { fill: none; stroke-width: 2; }
+.chart-line-cards { stroke: var(--series-cards); }
+.chart-line-circuit { stroke: var(--series-circuit); stroke-dasharray: 6 4; }
+.chart-cursor { stroke: var(--text-dim); stroke-width: 1; stroke-dasharray: 2 3; }
+.chart-marker { stroke: var(--surface-2); stroke-width: 2; }
+.chart-marker-cards { fill: var(--series-cards); }
+.chart-marker-circuit { fill: var(--series-circuit); }
+.chart-label { font-size: 11px; font-weight: 700; font-family: var(--sans); }
+.chart-label-cards { fill: var(--series-cards); }
+.chart-label-circuit { fill: var(--series-circuit); }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.82rem; color: var(--text-dim); justify-content: center; }
+.legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+.legend-swatch { display: inline-block; width: 1.3rem; height: 0; border-radius: 0; }
+.legend-cards { border-top: 3px solid var(--series-cards); }
+.legend-circuit { border-top: 3px dashed var(--series-circuit); }
+.compare-figure figcaption { font-size: 0.82rem; color: var(--text-dim); max-width: 78ch; margin: 0 auto; text-align: center; }
+
+/* ---------- predictions ---------- */
+.predict {
+  display: grid;
+  gap: 0.5rem;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+}
+.predict-tag { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: var(--accent-text); }
+.predict-q { margin: 0; font-size: 0.97rem; font-weight: 600; max-width: 74ch; }
+.predict-opts { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.predict-opt { font-size: 0.85rem; }
+.predict-chosen { border-color: var(--accent); background: var(--surface); font-weight: 700; }
+.predict-status { display: grid; gap: 0.25rem; }
+.predict-debrief {
+  display: grid;
+  gap: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  margin: 0.8rem 0;
+}
+
+/* ---------- disclosures, checks, bridges ---------- */
+#app summary { cursor: pointer; font-weight: 600; }
+#app summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.disclose, .learner-check {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface);
+  margin: 0.6rem 0;
+}
+.disclose-body { display: grid; gap: 0.5rem; margin-top: 0.6rem; }
+.disclose-body p { margin: 0; color: var(--text-dim); font-size: 0.9rem; max-width: 80ch; }
+.learner-check { background: var(--accent-tint); }
+.check-body { margin-top: 0.6rem; display: grid; gap: 0.55rem; }
+.check-q { margin: 0; font-size: 0.92rem; }
+.check-opt { font-size: 0.85rem; }
+.check-feedback { display: grid; gap: 0.35rem; }
+.check-explain { margin: 0; font-size: 0.88rem; color: var(--text-dim); max-width: 80ch; }
+.exit-q {
+  display: grid;
+  gap: 0.5rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem 0.9rem;
+}
+.match-task { display: grid; gap: 0.6rem; }
+.match-row { display: grid; gap: 0.3rem; }
+.match-threat { font-size: 0.9rem; font-weight: 600; }
+
+.bridge {
+  display: grid;
+  gap: 0.3rem;
+  border-left: 3px solid var(--accent-text);
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+  padding: 0.7rem 0.9rem;
+  margin: 1rem 0;
+}
+.bridge-line { margin: 0; font-size: 0.9rem; color: var(--text); max-width: 80ch; }
+.bridge-label { font-weight: 700; color: var(--accent-text); }
+.bridge-btn { justify-self: start; margin-top: 0.3rem; }
+
+.facts { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.3rem; font-size: 0.9rem; }
+.facts li { color: var(--text); }
+.facts code { background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 4px; }
+
+.sig-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.sig-card {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem;
+}
+.sig-card h4 { margin: 0; font-size: 0.95rem; }
+.sig-card-live { border-left: 3px solid var(--accent); }
+.sig-card-forced { border-left: 3px solid var(--border); }
+@media (max-width: 640px) { .sig-pair { grid-template-columns: 1fr; } }
+
+/* ---------- glossary & term asides ---------- */
+.term-aside {
+  margin: 0 0 0.7rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface-2);
+  border-left: 3px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.86rem;
+}
+.term-aside dt { font-weight: 700; margin: 0 0 0.15rem; }
+.term-aside dd { margin: 0; color: var(--text-dim); }
+.term-aside-tag { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-dim); margin-right: 0.5rem; }
+.glossary-body { margin: 0.6rem 0 0; display: grid; gap: 0.15rem; }
+.glossary-body dt { font-weight: 700; font-size: 0.88rem; margin-top: 0.5rem; }
+.glossary-body dd { margin: 0; font-size: 0.88rem; color: var(--text-dim); }
+.glossary-formal { color: var(--accent-text); }
+
+/* ---------- footer ---------- */
+.scripture-footer {
+  margin-top: 2.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+.scripture-footer p { margin: 0.4rem 0; }
+.footer-links a { color: var(--accent-text); }
+
+/* ---------- motion: tied to an action, never idle ---------- */
+.reveal { animation: reveal 0.22s ease; }
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.card-deal { animation: dealin 0.28s ease; }
+@keyframes dealin {
+  from { opacity: 0; transform: translateY(-10px) rotate(-4deg); }
+  to { opacity: 1; transform: none; }
+}
+.card-flip { animation: flipin 0.32s ease; }
+@keyframes flipin {
+  from { transform: rotateY(90deg); }
+  to { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .card-deal, .card-flip { animation: none; }
+  * { transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+/* Touch targets: primary and icon controls get a >=44px hit area on coarse
+   pointers (phones/tablets), where precise tapping is harder. */
+@media (pointer: coarse) {
+  #app .btn, #app .tab-btn, #app .check-opt, #app .predict-opt, #app .seg-btn { min-height: 44px; }
+}
+
+@media (max-width: 640px) {
+  .tour-actions { margin-left: 0; }
+  .tour-bar { position: static; }
+  .weight-row { grid-template-columns: 3.6rem 1fr auto; }
+  .card { width: 40px; height: 56px; }
+  .card-pip { font-size: 1.4rem; }
+}
