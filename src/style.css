@@ -114,6 +114,17 @@ body {
   border: 0;
 }
 
+/* Border-box everywhere inside the app. Without it, `max-width: 100%` measures the
+   CONTENT box, so any padded element that also sets a width overflows its parent by
+   exactly its own padding — which is how the stage's control strip pushed the page
+   sideways at 200% zoom. */
+#app,
+#app *,
+#app *::before,
+#app *::after {
+  box-sizing: border-box;
+}
+
 #app {
   max-width: 1040px;
   margin: 0 auto;
@@ -154,40 +165,36 @@ body {
    and the subtitle's opacity is replaced with an explicit colour so the muted look
    comes from lightness (AA-checkable) rather than transparency. */
 .cl-hero-why { box-sizing: border-box; background: var(--accent-tint); }
-@media (max-width: 640px) { .cl-hero-main { min-width: 0; } }
 .cl-hero-sub { color: var(--accent-text); opacity: 1; }
 .cl-hero-why-label { color: var(--accent-text); }
+@media (max-width: 640px) {
+  /* The managed block's `flex: 1 1 22rem` is written for a row; the same media query
+     that flips the hero to `column` turns that 22rem basis into a 352px MINIMUM
+     HEIGHT, so a three-line description reserved a third of a phone screen for blank
+     space. Re-basing on content is what actually gets the cards above the fold. */
+  .cl-hero-main { min-width: 0; flex: 0 0 auto; }
+  .cl-hero-why { flex: 0 0 auto; padding: 0.7rem 0.85rem; }
+  .cl-hero-why-text { font-size: 0.9rem; }
+  .cl-hero { margin-bottom: 0.9rem; gap: 0.8rem; }
+}
 
 /* ---------- guided tour ---------- */
-.tour-invite {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--accent-tint);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 1rem 1.15rem;
-  margin: 0 0 1.25rem;
-}
-.tour-invite-main { flex: 1 1 22rem; }
-.tour-invite-title { margin: 0; font-size: 1.15rem; font-weight: 700; }
-.tour-invite-promise { margin: 0.35rem 0 0; color: var(--text-dim); font-size: 0.95rem; max-width: 66ch; }
-.tour-invite-actions { display: grid; gap: 0.35rem; justify-items: start; }
-.tour-start-btn { font-size: 0.95rem; padding: 0.6rem 1.1rem; }
+/* One control, not a panel. The old invitation was as tall as the interaction it was
+   introducing and pushed the cards three screenfuls down on a phone. */
+.tour-invite { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.6rem 0 0; }
+.tour-toggle { font-size: 0.84rem; padding: 0.35rem 0.75rem; }
+.tour-toggle-icon { color: var(--accent-text); font-weight: 700; }
+.tour-invite-hint { font-size: 0.82rem; color: var(--text-dim); }
 
 .tour-bar {
-  position: sticky;
-  top: 3.6rem; /* clears the shared top bar */
-  z-index: 5;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.4rem;
   background: var(--surface);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
   border-radius: var(--radius);
-  padding: 0.8rem 1rem;
-  margin: 0 0 1.25rem;
+  padding: 0.7rem 0.9rem;
+  margin: 0.6rem 0 0;
 }
 .tour-head { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
 .tour-tag { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: var(--accent-text); }
@@ -225,25 +232,89 @@ body {
 .tab-btn.tab-done.active { color: var(--accent-ink); }
 .tab-tick { font-weight: 700; }
 
-/* ---------- panels & sections ---------- */
-.panel-intro h2 { font-size: 1.35rem; margin: 0 0 0.5rem; }
-.panel-intro p { color: var(--text-dim); margin: 0 0 0.7rem; max-width: 72ch; }
-.panel-sub { color: var(--text-dim); font-size: 0.93rem; margin: 0 0 0.4rem; max-width: 74ch; }
-.section-h { font-size: 1.1rem; margin: 1.4rem 0 0.6rem; }
-
-.aha, .break-it, .compare-block, .kat-group, .transfer {
-  display: grid;
-  gap: 0.75rem;
+/* ---------- the stage: the first screen does the teaching ----------
+   Unframed on purpose. Everything below is explanation; this is the thing being
+   explained, and a border round it would make it look like one more panel. */
+.stage { display: grid; gap: 0.8rem; margin: 0.4rem 0 0; }
+.stage-lead {
+  margin: 0;
+  font-size: clamp(1.02rem, 2.2vw, 1.22rem);
+  font-weight: 700;
+  line-height: 1.35;
+  max-width: 46ch;
+}
+.stage-bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.6rem;
+  align-items: center;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem;
-  margin: 1.1rem 0;
+  padding: 0.6rem 0.85rem;
+  width: fit-content;
+  max-width: 100%;
 }
-.aha { border-color: var(--accent); }
-.aha-clean { border-color: var(--ok); }
-.aha-broken { border-color: var(--alarm); }
-.aha h3, .break-it h3, .compare-block h3, .kat-group h3 {
+.stage-bit { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.stage-bit-label { font-size: 0.86rem; font-weight: 600; }
+.stage-table { display: flex; justify-content: flex-start; }
+.stage-table .card { width: 52px; height: 72px; }
+.stage-table .card-pip { font-size: 1.8rem; }
+.stage-action { display: flex; flex-wrap: wrap; gap: 0.7rem 1.2rem; align-items: center; }
+.stage-btn { font-size: 0.95rem; padding: 0.55rem 1.1rem; }
+.stage-cut { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.stage-cut-label { font-size: 0.86rem; font-weight: 600; color: var(--text-dim); }
+.stage-cut .seg-btn { min-width: 2.1rem; }
+.stage-result { min-height: 2.5rem; display: grid; gap: 0.4rem; }
+.stage-result-live { display: grid; gap: 0.4rem; }
+.stage-hint { margin: 0; max-width: 62ch; }
+.stage-nudge { margin: 0; font-weight: 600; color: var(--text); }
+.readoff-line {
+  margin: 0;
+  font-size: 1.02rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+/* A shape, not a hue: ♠♠ versus ♠♥♠ says which case this is in greyscale, in
+   deuteranopia and read aloud. */
+.readoff-shape {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.1rem 0.45rem;
+}
+.readoff-check { margin: 0; font-size: 0.9rem; color: var(--text-dim); }
+
+/* ---------- the invariant, promoted ---------- */
+.cut-cell-now { border-color: var(--accent); }
+.cut-cell-now-tag { color: var(--accent-text); font-weight: 700; }
+
+/* ---------- panels & sections ---------- */
+.panel-intro h2 { font-size: 1.35rem; margin: 0 0 0.5rem; }
+.panel-intro p { color: var(--text-dim); margin: 0 0 0.7rem; max-width: 72ch; }
+.panel-sub { color: var(--text-dim); font-size: 0.95rem; margin: 0 0 0.4rem; max-width: 74ch; }
+.section-h { font-size: 1.1rem; margin: 1.4rem 0 0.6rem; }
+
+/* ---------- three levels of surface ----------
+   STAGE     unframed space for the cards, rings and comparisons — the subject.
+   CONTROLS  one restrained utility surface (.controls, .stage-bits).
+   EVIDENCE  tables, derivations, caveats and glossaries, marked by a heading rule
+             rather than a box.
+   Boxing everything at the same weight is what made the old page read as fourteen
+   equally-important panels; a rule and some space say "supporting material" without
+   competing with the thing being supported. */
+.aha, .break-it, .compare-block, .kat-group, .invariant, .about {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.1rem 0 0;
+  margin: 1.5rem 0;
+  border-top: 1px solid var(--border);
+}
+.aha h3, .break-it h3, .compare-block h3, .kat-group h3, .invariant h3, .about h3 {
   margin: 0;
   font-size: 1.08rem;
   display: flex;
@@ -251,7 +322,20 @@ body {
   gap: 0.6rem;
   align-items: center;
 }
-.transfer { border-color: var(--accent); gap: 0.9rem; }
+.about p { margin: 0; max-width: 76ch; color: var(--text-dim); }
+/* The one place a coloured rule is worth spending: the security state of the run the
+   learner just configured. */
+.readout-broken { border-top: 2px solid var(--alarm); }
+.readout-clean { border-top: 2px solid var(--ok); }
+.transfer {
+  display: grid;
+  gap: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  margin: 1.5rem 0;
+}
 .transfer h2 { margin: 0; font-size: 1.2rem; }
 .transfer h3 { margin: 0.4rem 0 0; font-size: 1rem; }
 
@@ -272,7 +356,7 @@ body {
 .input-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
 .action-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .preset-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.help { font-size: 0.84rem; color: var(--text-dim); margin: 0.15rem 0 0; max-width: 78ch; }
+.help { font-size: 0.875rem; color: var(--text-dim); margin: 0.15rem 0 0; max-width: 78ch; }
 .range-value { font-family: var(--mono); font-weight: 700; font-size: 0.95rem; min-width: 3.2em; text-align: right; }
 /* `min-width: 0` because a range input has an intrinsic minimum width in Firefox —
    without it the slider refuses to shrink inside its grid column and pushes the page
@@ -381,7 +465,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
   );
 }
 .card-marked { outline: 3px solid var(--accent); outline-offset: 2px; }
-.card-caption { font-size: 0.68rem; color: var(--text-dim); font-weight: 600; }
+.card-caption { font-size: 0.74rem; color: var(--text-dim); font-weight: 600; }
 
 .encoding { display: flex; flex-wrap: wrap; gap: 1.4rem; }
 .encoding-item { display: flex; align-items: center; gap: 0.6rem; }
@@ -432,7 +516,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
   padding: 0.6rem 0.2rem;
 }
 .step-progress { font-size: 0.85rem; color: var(--text-dim); margin-left: auto; }
-.trace-tag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; color: var(--accent-text); }
+.trace-tag { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.12em; color: var(--accent-text); }
 .step-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -474,25 +558,60 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
   border-radius: 8px;
   padding: 0.6rem 0.7rem;
 }
-.cut-cell-label { font-size: 0.78rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.06em; }
+.cut-cell-label { font-size: 0.8rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.06em; }
 
-/* ---------- orbits ---------- */
-.orbit-section { margin: 1rem 0; }
-.orbit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 0.9rem; }
-.orbit-card {
+/* ---------- the orbit transformation ---------- */
+.transform-layout { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: flex-start; }
+.transform-stage { display: grid; gap: 0.4rem; justify-items: center; flex: 0 0 auto; }
+.transform-caption { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; color: var(--text-dim); }
+.transform-controls { display: grid; gap: 0.5rem; align-content: start; flex: 1 1 15rem; }
+.transform-status { margin: 0; display: grid; gap: 0.5rem; font-size: 0.92rem; }
+
+/* The two groups differ by GLYPH and BORDER STYLE as well as hue, so the partition
+   survives greyscale, deuteranopia and a printout. */
+.group-glyph {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.05rem 0.35rem;
+}
+.group-chip { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.86rem; font-weight: 600; }
+.bucket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 0.8rem; }
+.bucket, .orbit-card {
   display: grid;
   gap: 0.6rem;
+  align-content: start;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: 0.85rem;
 }
-.orbit-adjacent { border-left: 3px solid var(--ok); }
-.orbit-separated { border-left: 3px solid var(--text-dim); }
-.orbit-card h3 { margin: 0; font-size: 1.02rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.bucket-adjacent { border-left: 6px double var(--ok); }
+.bucket-separated { border-left: 3px solid var(--text-dim); }
+.bucket h4, .orbit-card h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+/* The empty group is the point of the exhibit, so it is centred in the space it will
+   never fill rather than left hanging at the top of a void. */
+.bucket-empty { margin: auto 0; padding: 1.2rem 0; text-align: center; font-size: 0.88rem; color: var(--text-dim); font-style: italic; }
+.bucket-rows { display: grid; gap: 0.5rem; }
+.bucket-row { display: grid; gap: 0.2rem; }
+.bucket-row .card { width: 34px; height: 47px; }
+.bucket-row .card-pip { font-size: 1.15rem; }
+.bucket-row-label { font-size: 0.76rem; font-weight: 700; color: var(--text-dim); font-family: var(--mono); }
+
+/* ---------- the finished enumeration ---------- */
+.orbit-section { display: grid; gap: 0.7rem; }
+.orbit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0.9rem; }
 .orbit-ring { display: grid; gap: 0.2rem; justify-items: center; text-align: center; }
-.orbit-row-btn { font-size: 0.78rem; }
-.escape-out { display: grid; gap: 0.5rem; }
+.orbit-row-btn { font-size: 0.8rem; }
 
 .layout-list { display: grid; gap: 0.7rem; }
 .layout-item { display: grid; gap: 0.25rem; }
@@ -565,9 +684,9 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
   border-radius: 8px;
   padding: 0.65rem 0.8rem;
 }
-.stat-label { font-size: 0.74rem; font-weight: 700; color: var(--text-dim); }
+.stat-label { font-size: 0.78rem; font-weight: 700; color: var(--text-dim); }
 .stat-value { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; line-height: 1.15; }
-.stat-caption { font-size: 0.76rem; color: var(--text-dim); }
+.stat-caption { font-size: 0.8rem; color: var(--text-dim); }
 .stat-ok { border-left: 3px solid var(--ok); }
 .stat-ok .stat-value { color: var(--ok-text); }
 .stat-alarm { border-left: 3px solid var(--alarm); }
@@ -607,7 +726,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
   border: 1px solid var(--border);
   border-radius: 8px;
 }
-.kat-table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
+.kat-table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
 .kat-table th, .kat-table td {
   text-align: left;
   padding: 0.42rem 0.6rem;
@@ -641,6 +760,87 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
 .compare-pair { font-family: var(--mono); font-weight: 700; }
 .compare-note { color: var(--text-dim); }
 
+/* ---------- the conclusion ---------- */
+.conclusion-list { gap: 0.7rem; font-size: 0.95rem; }
+.conclusion-list li { max-width: 82ch; }
+/* The callback is the part that makes a summary land: it names the thing the learner
+   did, not the thing they were told. */
+.conclusion-back { display: block; margin-top: 0.2rem; font-size: 0.88rem; color: var(--accent-text); }
+.timeline li { max-width: 82ch; }
+
+/* ---------- the dealer comparison ---------- */
+.dealer-compare { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: stretch; }
+.dealer-col {
+  flex: 1 1 13rem;
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
+  justify-items: start;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.9rem;
+}
+/* The reference column is deliberately quieter: it never changes, and the learner's
+   attention belongs on the one that does. */
+.dealer-col-ref { opacity: 1; background: var(--surface); }
+.dealer-col-live { border-color: var(--accent); }
+.dealer-col h4 { margin: 0; font-size: 0.98rem; }
+.dealer-sub { font-size: 0.8rem; color: var(--text-dim); }
+.dealer-figure { font-family: var(--mono); font-size: 2rem; font-weight: 700; line-height: 1.15; margin-top: 0.2rem; }
+.dealer-figure-label { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.35rem; }
+.dealer-vs { align-self: center; font-weight: 700; color: var(--text-dim); font-size: 0.9rem; }
+
+/* ---------- which rows became evidence ---------- */
+.evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.6rem; }
+.evidence-card {
+  display: grid;
+  gap: 0.35rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+}
+.evidence-card .card { width: 32px; height: 44px; }
+.evidence-card .card-pip { font-size: 1.1rem; }
+.evidence-even { border-left: 3px solid var(--border); }
+.evidence-hint { border-left: 3px solid var(--alarm); }
+.evidence-proof { border-left: 6px double var(--alarm); }
+.evidence-verdict { margin: 0; font-size: 0.86rem; }
+.evidence-proof .evidence-verdict { color: var(--alarm-text); }
+.evidence-nums { margin: 0; font-size: 0.8rem; color: var(--text-dim); font-family: var(--mono); }
+
+/* ---------- the derivation ---------- */
+.formula {
+  font-family: var(--mono);
+  font-size: 0.98rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  overflow-x: auto;
+  text-align: center;
+}
+
+/* ---------- the reading rule ---------- */
+.reading-out { display: grid; gap: 0.7rem; }
+.reading-row { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+.reading-row .help { margin: 0; flex: 1 1 16rem; }
+.reading-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.6rem; }
+.reading-col {
+  display: grid;
+  gap: 0.1rem;
+  justify-items: center;
+  text-align: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.5rem;
+}
+.reading-col-label { font-family: var(--mono); font-size: 0.82rem; color: var(--text-dim); font-weight: 700; }
+.reading-col-value { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; }
+.reading-col-frac { font-size: 0.78rem; color: var(--text-dim); }
+
 /* ---------- posterior bars ---------- */
 .bar-list { display: grid; gap: 0.35rem; margin-top: 0.6rem; }
 .bar-row { display: grid; grid-template-columns: 6.5rem 1fr 3.5rem; gap: 0.6rem; align-items: center; font-size: 0.85rem; }
@@ -666,8 +866,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
 }
 .chart-grid { stroke: var(--border); stroke-width: 1; }
 .chart-axis { stroke: var(--text-dim); stroke-width: 1.5; }
-.chart-tick, .chart-axis-title { fill: var(--text-dim); font-size: 10px; font-family: var(--mono); }
-.chart-axis-title { font-family: var(--sans); font-size: 11px; }
+.chart-tick, .chart-axis-title { fill: var(--text-dim); font-size: 11px; font-family: var(--mono); }
+.chart-axis-title { font-family: var(--sans); font-size: 12px; }
 .chart-line { fill: none; stroke-width: 2; }
 .chart-line-cards { stroke: var(--series-cards); }
 .chart-line-circuit { stroke: var(--series-circuit); stroke-dasharray: 6 4; }
@@ -675,7 +875,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
 .chart-marker { stroke: var(--surface-2); stroke-width: 2; }
 .chart-marker-cards { fill: var(--series-cards); }
 .chart-marker-circuit { fill: var(--series-circuit); }
-.chart-label { font-size: 11px; font-weight: 700; font-family: var(--sans); }
+.chart-label { font-size: 12px; font-weight: 700; font-family: var(--sans); }
 .chart-label-cards { fill: var(--series-cards); }
 .chart-label-circuit { fill: var(--series-circuit); }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.82rem; color: var(--text-dim); justify-content: center; }
@@ -690,9 +890,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
   display: grid;
   gap: 0.5rem;
   background: var(--accent-tint);
-  border: 1px solid var(--accent);
-  border-left-width: 3px;
-  border-radius: var(--radius);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
   padding: 0.85rem 1rem;
   margin: 1rem 0;
 }
@@ -724,13 +923,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
   margin: 0.6rem 0;
 }
 .disclose-body { display: grid; gap: 0.5rem; margin-top: 0.6rem; }
-.disclose-body p { margin: 0; color: var(--text-dim); font-size: 0.9rem; max-width: 80ch; }
-.learner-check { background: var(--accent-tint); }
+.disclose-body p { margin: 0; color: var(--text-dim); font-size: 0.92rem; max-width: 80ch; }
+.learner-check { background: var(--surface-2); }
 .check-body { margin-top: 0.6rem; display: grid; gap: 0.55rem; }
 .check-q { margin: 0; font-size: 0.92rem; }
 .check-opt { font-size: 0.85rem; }
 .check-feedback { display: grid; gap: 0.35rem; }
-.check-explain { margin: 0; font-size: 0.88rem; color: var(--text-dim); max-width: 80ch; }
+.check-explain { margin: 0; font-size: 0.9rem; color: var(--text-dim); max-width: 80ch; }
 .exit-q {
   display: grid;
   gap: 0.5rem;
@@ -833,8 +1032,15 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
 
 @media (max-width: 640px) {
   .tour-actions { margin-left: 0; }
-  .tour-bar { position: static; }
+  .tabs { margin: 0.3rem 0 0.7rem; }
+  .tab-btn { font-size: 0.84rem; padding: 0.4rem 0.6rem; }
+  .tab-list { gap: 0.3rem; padding-bottom: 0.4rem; }
+  .tour-invite { margin-top: 0.45rem; }
+  .stage-bit-label { font-size: 0.84rem; }
   .weight-row { grid-template-columns: 3.6rem 1fr auto; }
   .card { width: 40px; height: 56px; }
   .card-pip { font-size: 1.4rem; }
+  .stage-table .card { width: 44px; height: 61px; }
+  .stage-table .card-pip { font-size: 1.55rem; }
+  .stage-bits { width: 100%; }
 }

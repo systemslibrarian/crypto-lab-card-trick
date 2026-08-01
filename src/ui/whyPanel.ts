@@ -1,19 +1,20 @@
 /**
  * Exhibit 2 — why the cut cannot change the answer.
  *
- * The proof is a partition, so the exhibit is a partition: all ten legal rows, drawn
- * as two rings of five. A learner can click a row and watch it travel round its own
- * ring under the cut, and can look for a cut that moves it to the other ring and
- * fail to find one, because there isn't one.
+ * The proof is that the cut's orbits partition the ten legal rows into two blocks, so
+ * the exhibit is a *transformation* rather than two lists: one row in the middle, five
+ * cut buttons around it, and two buckets that fill as the learner applies them. Every
+ * result lands in the bucket it started in, and the learner discovers that by trying to
+ * make it not happen.
  *
- * The complete 4 × 5 protocol table sits underneath, recomputed in the browser and
- * checked against the hand-written vectors — the honest substitute for a KAT file
- * that does not exist for a protocol made of cardboard.
+ * The completed enumeration is still here — all ten rows, both orbits — but behind a
+ * disclosure, because a finished table is what you check *after* you believe the claim,
+ * not how you come to believe it.
  */
 
-import { ALL_INPUTS, ALL_SHIFTS, type Sequence } from '../cards/types.js';
+import { ALL_INPUTS, ALL_SHIFTS, type Sequence, type Shift } from '../cards/types.js';
 import { cut, fromKey, layout, run, toKey } from '../cards/protocol.js';
-import { orbits, spadeGap } from '../cards/necklace.js';
+import { orbitName, orbits, spadeGap } from '../cards/necklace.js';
 import { PROTOCOL_VECTORS } from '../cards/vectors.js';
 import { ringEl, rowEl } from './cards.js';
 import {
@@ -27,23 +28,48 @@ import {
   note,
   panelIntro,
   scrollRegion,
+  srOnly,
   termAside,
   verdict,
 } from './dom.js';
+
+/**
+ * The two blocks, named by shape rather than by colour.
+ *
+ * `♠♠` and `♠♥♠` survive greyscale, deuteranopia, a printout and a screen reader —
+ * which a green border and a red border do not. The colours are still there; they are
+ * just no longer the only thing carrying the distinction.
+ */
+const GROUP = {
+  adjacent: { glyph: '♠♠', title: 'Group A — the spades touch', reads: 1 },
+  separated: { glyph: '♠♥♠', title: 'Group B — the spades are apart', reads: 0 },
+} as const;
+
+const STARTS: readonly { key: string; label: string }[] = [
+  { key: 'HSHSH', label: 'a row where the spades are apart' },
+  { key: 'SSHHH', label: 'a row where the spades touch' },
+];
 
 export function renderWhyPanel(root: HTMLElement): void {
   root.replaceChildren(
     panelIntro(
       'Why the cut cannot change the answer',
-      'There are only ten ways to lay two spades among three hearts. Cutting the deck shuffles those ten arrangements among themselves — and it turns out they fall into exactly two groups, with no cut that ever gets you from one group to the other.',
-      'That is the whole proof. The protocol’s job is just to make sure your inputs land in the right group.',
+      'There are only ten ways to lay two spades among three hearts. Cutting the deck shuffles those ten arrangements among themselves — and they fall into exactly two groups, with no cut that ever gets you from one group to the other.',
     ),
     termAside(TERMS.orbit),
-    orbitSection(),
-    counterSection(),
+    transformSection(),
+    disclosure(
+      'Show all 10 rows — the complete two-group enumeration',
+      h(
+        'p',
+        {},
+        'Both groups in full, with every row reachable from every other row of its own group. This is the finished partition; the experiment above is how you find it.',
+      ),
+      orbitSection(),
+    ),
     note(
       'info',
-      'Notice what makes five work: with two spades among five positions, the gap between them is 1 or 2 — and nothing else, because a gap of 3 is a gap of 2 measured the other way round. Two possible gaps, two groups, one output bit. A different deck size needs a different argument, not a bigger version of this one.',
+      'Notice what makes five work: with two spades among five positions the gap between them is 1 or 2, and nothing else, because a gap of 3 is a gap of 2 measured the other way round. Two possible gaps, two groups, one output bit. A different deck size needs a different argument, not a bigger version of this one.',
     ),
     tableSection(),
     learnerCheck(
@@ -53,11 +79,11 @@ export function renderWhyPanel(root: HTMLElement): void {
         { label: 'No — never, for any cut', correct: true },
         { label: 'Only for some starting rows', correct: false },
       ],
-      'A cut rotates the ring. Rotating a ring moves every card, but it moves them all together, so who is standing next to whom never changes. The two groups above are closed: every row of one group cuts to another row of the same group, and the fifty combinations in the table below are the exhaustive check.',
+      'A cut rotates the ring. Rotating a ring moves every card, but it moves them all together, so who is standing next to whom never changes. The two groups are closed: every row of one group cuts to another row of the same group, and the fifty combinations checked above are the exhaustive version of that sentence.',
     ),
     bridge(
       'The cut moves a row around inside its own group of five and can never leave it, so the answer is safe from the cut.',
-      'The answer is safe from the cut — but is the learner’s SECRET safe from the row? Three different input pairs produce the “apart” group. Does the row say which one it was?',
+      'The answer is safe from the cut — but is the SECRET safe from the row? Three different input pairs produce the “apart” group. Does the row say which one it was?',
       {
         label: 'See exactly what the row gives away →',
         onClick: () => document.getElementById('tab-leak')?.click(),
@@ -66,13 +92,237 @@ export function renderWhyPanel(root: HTMLElement): void {
   );
 }
 
-// ------------------------------------------------------------------- orbits
+// ------------------------------------------------------- the transformation
+
+function transformSection(): HTMLElement {
+  let startKey = STARTS[0].key;
+  const applied = new Set<Shift>();
+
+  const stage = h('div', { class: 'transform-stage' });
+  const bucketHost = h('div', { class: 'bucket-grid' });
+  const status = h('p', { class: 'transform-status', role: 'status', 'aria-live': 'polite' });
+  const cutButtons: HTMLButtonElement[] = [];
+
+  const paint = (): void => {
+    const start = fromKey(startKey) as Sequence;
+    const home = orbitName(start);
+
+    clear(stage);
+    stage.append(
+      h('span', { class: 'transform-caption' }, 'The row on the table'),
+      ringEl(start, { size: 168, showVerdict: true }),
+      rowEl(start, { markSpades: true, ariaLabel: `The starting row ${startKey}` }),
+      h(
+        'span',
+        { class: 'group-chip' },
+        h('span', { class: 'group-glyph', 'aria-hidden': 'true' }, GROUP[home].glyph),
+        GROUP[home].title,
+      ),
+    );
+
+    clear(bucketHost);
+    for (const name of ['adjacent', 'separated'] as const) {
+      const landed = [...applied]
+        .map((s) => ({ s, row: cut(start, s) }))
+        .filter((r) => orbitName(r.row) === name);
+      bucketHost.append(
+        h(
+          'section',
+          { class: `bucket bucket-${name}` },
+          h(
+            'h4',
+            {},
+            h('span', { class: 'group-glyph', 'aria-hidden': 'true' }, GROUP[name].glyph),
+            GROUP[name].title,
+            h('span', { class: 'pill pill-neutral' }, `reads ${GROUP[name].reads}`),
+          ),
+          landed.length === 0
+            ? h('p', { class: 'bucket-empty' }, 'Nothing has landed here yet.')
+            : h(
+                'div',
+                { class: 'bucket-rows' },
+                ...landed.map((r) =>
+                  h(
+                    'div',
+                    { class: 'bucket-row reveal' },
+                    h('span', { class: 'bucket-row-label' }, `cut ${r.s}`),
+                    rowEl(r.row, {
+                      markSpades: true,
+                      ariaLabel: `Cut ${r.s} gives ${toKey(r.row)}`,
+                    }),
+                  ),
+                ),
+              ),
+        ),
+      );
+    }
+
+    for (const b of cutButtons) {
+      const s = Number(b.dataset.shift) as Shift;
+      b.setAttribute('aria-pressed', String(applied.has(s)));
+    }
+
+    const crossed = [...applied].filter((s) => orbitName(cut(start, s)) !== home).length;
+    clear(status);
+    if (applied.size === 0) {
+      status.append(
+        h(
+          'span',
+          {},
+          'Apply a cut and watch where the result lands. To break the protocol you would need one that crosses to the other group.',
+        ),
+      );
+    } else {
+      status.append(
+        h(
+          'span',
+          {},
+          `${applied.size} of 5 cuts applied. ${applied.size - crossed} stayed in ${GROUP[home].title.split('—')[0].trim()}; ${crossed} crossed.`,
+        ),
+      );
+      if (applied.size === 5) {
+        status.append(
+          crossed === 0
+            ? verdict('pass', 'every cut landed back in the same group — there was never one to find', 'Closed')
+            : verdict('fail', `${crossed} cuts escaped the group`, 'Broken'),
+        );
+      }
+    }
+  };
+
+  for (const s of ALL_SHIFTS) {
+    cutButtons.push(
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'btn seg-btn',
+          'data-shift': String(s),
+          'aria-pressed': 'false',
+          onclick: () => {
+            applied.add(s);
+            paint();
+          },
+        },
+        `cut ${s}`,
+      ) as HTMLButtonElement,
+    );
+  }
+
+  const startButtons = STARTS.map((opt) =>
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'btn btn-ghost',
+        'aria-pressed': String(opt.key === startKey),
+        onclick: () => {
+          startKey = opt.key;
+          applied.clear();
+          for (const b of startButtons) {
+            b.setAttribute('aria-pressed', String(b.dataset.start === opt.key));
+          }
+          paint();
+        },
+        'data-start': opt.key,
+      },
+      `Start from ${opt.label}`,
+    ),
+  ) as HTMLButtonElement[];
+
+  paint();
+
+  return h(
+    'section',
+    { class: 'aha' },
+    h('h3', {}, 'Try to escape the group'),
+    h(
+      'p',
+      { class: 'panel-sub' },
+      'Take one row and apply every cut there is. If even one result landed in the other group, the answer would depend on how the deck was cut — and the protocol would be wrong.',
+    ),
+    h(
+      'div',
+      { class: 'preset-row', role: 'group', 'aria-label': 'Choose the starting row' },
+      ...startButtons,
+    ),
+    h(
+      'div',
+      { class: 'transform-layout' },
+      stage,
+      h(
+        'div',
+        { class: 'transform-controls' },
+        h('span', { class: 'control-label', id: 'apply-cut-label' }, 'Apply a cut'),
+        h(
+          'div',
+          { class: 'seg-wrap', role: 'group', 'aria-labelledby': 'apply-cut-label' },
+          ...cutButtons,
+        ),
+        h(
+          'div',
+          { class: 'action-row' },
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'btn btn-primary',
+              onclick: () => {
+                for (const s of ALL_SHIFTS) applied.add(s);
+                paint();
+              },
+            },
+            'Apply all five',
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'btn btn-ghost',
+              onclick: () => {
+                applied.clear();
+                paint();
+              },
+            },
+            'Start over',
+          ),
+        ),
+      ),
+    ),
+    bucketHost,
+    status,
+    exhaustiveNote(),
+  );
+}
+
+/** The machine check behind the hand experiment: every row, every cut, on load. */
+function exhaustiveNote(): HTMLElement {
+  let crossings = 0;
+  let checks = 0;
+  for (const orbit of orbits()) {
+    const members = new Set(orbit.rows.map(toKey));
+    for (const row of orbit.rows) {
+      for (const s of ALL_SHIFTS) {
+        checks++;
+        if (!members.has(toKey(cut(row, s)))) crossings++;
+      }
+    }
+  }
+  return h(
+    'p',
+    { class: 'help' },
+    `Checked exhaustively when this page loaded, not just for the row above: all ${checks} combinations of a legal row and a cut, `,
+    h('strong', {}, `${crossings} of them changing group`),
+    '.',
+  );
+}
+
+// ---------------------------------------------------- the finished enumeration
 
 function orbitSection(): HTMLElement {
   const host = h('div', { class: 'orbit-grid' });
-  const found = orbits();
 
-  for (const orbit of found) {
+  for (const orbit of orbits()) {
     const rowsHost = h('div', { class: 'orbit-rows' });
     const ringHost = h('div', { class: 'orbit-ring' });
     let selected = 0;
@@ -80,7 +330,7 @@ function orbitSection(): HTMLElement {
     const paint = (): void => {
       clear(ringHost);
       ringHost.append(
-        ringEl(orbit.rows[selected], { size: 190, showVerdict: true }),
+        ringEl(orbit.rows[selected], { size: 180, showVerdict: true }),
         h(
           'p',
           { class: 'help' },
@@ -110,7 +360,7 @@ function orbitSection(): HTMLElement {
     rowsHost.append(
       h(
         'div',
-        { class: 'seg-wrap', role: 'group', 'aria-label': `Rows in the ${orbit.name} group` },
+        { class: 'seg-wrap', role: 'group', 'aria-label': `Rows in ${GROUP[orbit.name].title}` },
         ...buttons,
       ),
     );
@@ -118,17 +368,13 @@ function orbitSection(): HTMLElement {
     host.append(
       h(
         'section',
-        { class: `orbit-card orbit-${orbit.name}` },
+        { class: `orbit-card bucket-${orbit.name}` },
         h(
-          'h3',
+          'h4',
           {},
-          orbit.name === 'adjacent' ? 'Group A — the spades touch' : 'Group B — the spades are apart',
-          h('span', { class: `pill pill-${orbit.name === 'adjacent' ? 'ok' : 'neutral'}` }, `reads ${orbit.output}`),
-        ),
-        h(
-          'p',
-          { class: 'panel-sub' },
-          `Five rows. Cut any of them by any amount and you land on another row of this same five — click through them and watch the ring turn without the picture changing shape.`,
+          h('span', { class: 'group-glyph', 'aria-hidden': 'true' }, GROUP[orbit.name].glyph),
+          GROUP[orbit.name].title,
+          h('span', { class: 'pill pill-neutral' }, `reads ${orbit.output}`),
         ),
         ringHost,
         rowsHost,
@@ -140,72 +386,14 @@ function orbitSection(): HTMLElement {
   return h(
     'div',
     { class: 'orbit-section' },
-    h('h3', { class: 'section-h' }, 'The ten rows, in their two groups'),
     host,
-  );
-}
-
-// --------------------------------------------------- the exhaustive closure check
-
-function counterSection(): HTMLElement {
-  // Every row × every cut: does anything ever change group? Computed, not claimed.
-  let crossings = 0;
-  let checks = 0;
-  for (const orbit of orbits()) {
-    const members = new Set(orbit.rows.map(toKey));
-    for (const row of orbit.rows) {
-      for (const s of ALL_SHIFTS) {
-        checks++;
-        if (!members.has(toKey(cut(row, s)))) crossings++;
-      }
-    }
-  }
-
-  const escape = h('div', { class: 'escape-out', role: 'status', 'aria-live': 'polite' });
-  const tryEscape = (): void => {
-    const start = fromKey('HSHSH') as Sequence;
-    const results = ALL_SHIFTS.map((s) => ({ s, row: cut(start, s) }));
-    clear(escape);
-    escape.append(
-      h(
-        'ul',
-        { class: 'facts' },
-        ...results.map((r) =>
-          h(
-            'li',
-            {},
-            code(`cut ${r.s} → ${toKey(r.row)}`),
-            ` — gap ${spadeGap(r.row)}, still group B`,
-          ),
-        ),
-      ),
-      verdict('pass', 'no cut escaped the group; there was never one to find', 'Closed'),
-    );
-  };
-
-  return h(
-    'section',
-    { class: 'aha' },
-    h('h3', {}, 'Try to escape a group'),
-    h(
-      'p',
-      { class: 'panel-sub' },
-      'Start from ♥♠♥♠♥ — spades apart — and apply every cut there is. If even one of them landed in the touching group, the protocol would be wrong.',
-    ),
-    h(
-      'div',
-      { class: 'action-row' },
-      h('button', { type: 'button', class: 'btn btn-primary', onclick: tryEscape }, 'Try all five cuts'),
-    ),
-    escape,
     h(
       'p',
       { class: 'help' },
-      `Checked on load across every row and every cut: ${checks} combinations, ${crossings} of them changing group.`,
+      'Each group is closed under the cut: pick any row and its five cuts are the five rows of that same group, in some order. ',
+      code('orbitOf'),
+      ' in necklace.ts computes exactly that, and the tests assert both groups have five rows and share none.',
     ),
-    crossings === 0
-      ? verdict('pass', `all ${checks} row-and-cut combinations stayed in their own group`, 'Closed')
-      : verdict('fail', `${crossings} combinations escaped their group`, 'Broken'),
   );
 }
 
@@ -219,7 +407,8 @@ function tableSection(): HTMLElement {
     ALL_SHIFTS.map((s) => {
       const r = run(inputs, s);
       const expected = byKey.get(`${inputs.a}${inputs.b}${s}`);
-      const ok = expected !== undefined && expected.revealed === toKey(r.revealed) && expected.output === r.output;
+      const ok =
+        expected !== undefined && expected.revealed === toKey(r.revealed) && expected.output === r.output;
       if (!ok) mismatches++;
       return h(
         'tr',
@@ -228,7 +417,12 @@ function tableSection(): HTMLElement {
         h('td', {}, String(s)),
         h('td', {}, code(toKey(r.beforeCut))),
         h('td', {}, code(toKey(r.revealed))),
-        h('td', {}, r.adjacent ? 'touching' : 'apart'),
+        h(
+          'td',
+          {},
+          h('span', { class: 'group-glyph', 'aria-hidden': 'true' }, r.adjacent ? GROUP.adjacent.glyph : GROUP.separated.glyph),
+          srOnly(r.adjacent ? 'spades touching' : 'spades apart'),
+        ),
         h('td', {}, String(r.output)),
         h(
           'td',
@@ -236,7 +430,7 @@ function tableSection(): HTMLElement {
           h(
             'span',
             { class: `pill pill-${ok ? 'ok' : 'bad'}` },
-            h('span', { 'aria-hidden': 'true' }, ok ? '✓ ' : '✕ '),
+            h('span', { 'aria-hidden': 'true' }, ok ? '✓' : '✕'),
             ok ? 'matches' : 'differs',
           ),
         ),
@@ -310,8 +504,7 @@ function tableSection(): HTMLElement {
       ),
     ),
     disclosure(
-      'The layout, written out',
-      h('p', {}, 'For reference, the four starting rows before any cut:'),
+      'The four starting layouts, before any cut',
       h(
         'div',
         { class: 'layout-list' },

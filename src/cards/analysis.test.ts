@@ -5,6 +5,7 @@ import {
   bobLeak,
   distributionTable,
   entropy,
+  evidenceRows,
   excessLeakageBits,
   guessSuccess,
   leakReport,
@@ -289,6 +290,54 @@ describe('shiftFor', () => {
 
 const indicator = (s: number): CutWeights =>
   [0, 1, 2, 3, 4].map((i) => (i === s ? 1 : 0)) as unknown as CutWeights;
+
+describe('evidenceRows — naming the attack row by row', () => {
+  it('finds no evidence anywhere under a uniform cut', () => {
+    const rows = evidenceRows(UNIFORM_CUT);
+    expect(rows).toHaveLength(5); // the five rows an answer of 0 can produce
+    expect(rows.every((r) => r.points === null)).toBe(true);
+    expect(rows.every((r) => !r.exclusive)).toBe(true);
+  });
+
+  it('makes every reachable row conclusive when nobody cuts the deck', () => {
+    const rows = evidenceRows(NO_CUT);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.exclusive)).toBe(true);
+    expect(new Set(rows.map((r) => r.points))).toEqual(new Set([0, 1]));
+  });
+
+  it('points at the bit that actually produces the row more often', () => {
+    for (const r of evidenceRows(ALMOST)) {
+      if (r.points === 0) expect(r.ifZero).toBeGreaterThan(r.ifOne);
+      if (r.points === 1) expect(r.ifOne).toBeGreaterThan(r.ifZero);
+      if (r.points === null) expect(r.ifZero).toBeCloseTo(r.ifOne, 12);
+    }
+  });
+
+  it('calls a row exclusive only when one of Alice’s bits cannot produce it', () => {
+    for (const w of [UNIFORM_CUT, NO_CUT, LAZY, ALMOST]) {
+      for (const r of evidenceRows(w)) {
+        expect(r.exclusive).toBe(r.points !== null && (r.ifZero === 0 || r.ifOne === 0));
+      }
+    }
+  });
+
+  it('never lists a row neither secret can produce', () => {
+    for (const w of [UNIFORM_CUT, NO_CUT, LAZY, ALMOST]) {
+      for (const r of evidenceRows(w)) expect(r.ifZero + r.ifOne).toBeGreaterThan(0);
+    }
+  });
+
+  it('agrees with the total-variation figure it is explaining', () => {
+    // Half the L1 gap across the listed rows IS Bob's advantage — the row-by-row
+    // story and the headline number are the same quantity, not two estimates.
+    for (const w of [UNIFORM_CUT, NO_CUT, LAZY, ALMOST]) {
+      const gap =
+        evidenceRows(w).reduce((s, r) => s + Math.abs(r.ifZero - r.ifOne), 0) / 2;
+      expect(gap).toBeCloseTo(bobLeak(w).find((l) => l.known === 0)!.tv, 12);
+    }
+  });
+});
 
 describe('leakReport', () => {
   it('calls the uniform cut secure', () => {

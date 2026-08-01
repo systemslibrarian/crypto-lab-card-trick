@@ -174,33 +174,34 @@
           <h1 class="cl-hero-title">Card Trick</h1>
           <p class="cl-hero-sub">Five-card protocol · information-theoretic MPC · den Boer 1989</p>
           <p class="cl-hero-desc">
-            Deal three hearts and two spades, cut the deck by an amount you choose, turn
-            them over — and watch two people learn whether both their secret bits were 1,
-            with the probability table showing cell by cell that the cards said nothing else.
+            Choose two secret bits, cut five face-down cards, and reveal only their AND
+            while both inputs stay hidden.
           </p>
         </div>
         <aside class="cl-hero-why" aria-label="Why it matters">
           <span class="cl-hero-why-label">WHY IT MATTERS</span>
           <p class="cl-hero-why-text">
-            Almost everything that protects your data is safe only because breaking it
-            would take too long — a bet on what computers cannot yet do. This protocol
-            makes no such bet: the attacker is comparing two outcomes that are genuinely
-            identical, so no machine and no algorithm can help. Seeing what that actually
-            looks like, once, changes how you read every security claim afterwards.
+            Most cryptography bets that an attack is too expensive. Here, every secret
+            consistent with the answer produces exactly the same picture — so unlimited
+            computing power buys nothing.
           </p>
         </aside>
       </div>
 
-      <div id="tour-host"></div>
-
+      <!-- The five exhibits are one argument, so the strip reads as a lesson path:
+           perform it, prove it is correct, prove it is private, break the assumption it
+           rests on, then place it beside how computers do the same job. The visible
+           label is the short verb; the accessible name carries the full title, and it
+           contains the visible word so the name never contradicts the label. -->
       <nav class="tabs" aria-label="Exhibits">
         <div class="tab-list" role="tablist" aria-label="Card Trick exhibits">
-          <button class="tab-btn" role="tab" id="tab-protocol" aria-selected="true" aria-controls="panel-protocol" data-panel="protocol">The Protocol</button>
-          <button class="tab-btn" role="tab" id="tab-why" aria-selected="false" aria-controls="panel-why" data-panel="why" tabindex="-1">Why It Works</button>
-          <button class="tab-btn" role="tab" id="tab-leak" aria-selected="false" aria-controls="panel-leak" data-panel="leak" tabindex="-1">What Leaks</button>
-          <button class="tab-btn" role="tab" id="tab-break" aria-selected="false" aria-controls="panel-break" data-panel="break" tabindex="-1">Break the Shuffle</button>
-          <button class="tab-btn" role="tab" id="tab-compare" aria-selected="false" aria-controls="panel-compare" data-panel="compare" tabindex="-1">Cards vs Circuits</button>
+          <button class="tab-btn" role="tab" id="tab-protocol" aria-selected="true" aria-controls="panel-protocol" data-panel="protocol" aria-label="Perform it — the five-card protocol">Perform</button>
+          <button class="tab-btn" role="tab" id="tab-why" aria-selected="false" aria-controls="panel-why" data-panel="why" tabindex="-1" aria-label="Correctness — why the cut cannot change the answer">Correctness</button>
+          <button class="tab-btn" role="tab" id="tab-leak" aria-selected="false" aria-controls="panel-leak" data-panel="leak" tabindex="-1" aria-label="Privacy — what the revealed row gives away">Privacy</button>
+          <button class="tab-btn" role="tab" id="tab-break" aria-selected="false" aria-controls="panel-break" data-panel="break" tabindex="-1" aria-label="Break it — make the dealer sloppy">Break it</button>
+          <button class="tab-btn" role="tab" id="tab-compare" aria-selected="false" aria-controls="panel-compare" data-panel="compare" tabindex="-1" aria-label="Compare — cards against circuits">Compare</button>
         </div>
+        <div id="tour-host"></div>
       </nav>
 
       <main>

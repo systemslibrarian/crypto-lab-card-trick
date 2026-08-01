@@ -8,12 +8,13 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
  *
  * Axe only checks what is in the DOM, and this lab renders each tab lazily and fills
  * dynamic regions on click — so an unscanned state is an ungated state. This driver
- * walks all five exhibits, steps the protocol to the reveal, exercises the bit and
- * cut controls, clicks through both orbit lists, selects every revealed row in the
- * posterior explorer, drives every broken dealer, plays a round of the guessing game
- * both ways, moves the comparison chart across its crossover, answers both exit
- * questions and the matching task, and opens every disclosure and learner check so
- * the feedback live regions are populated too.
+ * walks all five exhibits: reveals the stage and re-cuts it live, exercises both bit
+ * controls, opens the six-step walkthrough, drives the orbit transformation from both
+ * starting groups, scrubs every reveal in the reading rule and the posterior, runs
+ * every broken dealer, plays a round of the guessing game both ways, moves the
+ * comparison chart across its crossover, answers all three exit questions and the
+ * matching task, and opens every disclosure and learner check so the feedback live
+ * regions are populated too.
  */
 async function driveDemos(page: Page): Promise<void> {
   const click = async (selector: string, nth = 0): Promise<void> => {
@@ -24,8 +25,8 @@ async function driveDemos(page: Page): Promise<void> {
       .catch(() => {});
   };
 
-  // --- The guided tour: its bar, dots and cross-tab jumps are real UI -------
-  await clickByText(page, '#tour-invite', 'Start the guided tour');
+  // --- Guided mode: its bar, dots and cross-tab jumps are real UI -----------
+  await clickByText(page, '#tour-invite', 'Guided mode');
   await page.waitForTimeout(120);
   await clickByText(page, '#tour-bar', 'Continue');
   await clickByText(page, '#tour-bar', 'Continue');
@@ -33,21 +34,24 @@ async function driveDemos(page: Page): Promise<void> {
   await clickByText(page, '#tour-bar', 'Exit tour');
   await page.waitForTimeout(120);
 
-  // --- Exhibit 1: the protocol ---------------------------------------------
+  // --- Exhibit 1: the stage, then the walkthrough behind it ----------------
   await click('#tab-protocol');
   await page.locator('#panel-protocol').waitFor({ timeout: 10_000 });
-  for (const el of await page.locator('#panel-protocol .predict-opt').all()) {
-    await el.click({ timeout: 1500 }).catch(() => {});
-  }
+  // The stage in both of its states — face down and revealed.
+  await click('#stage-reveal');
   // Both bit values on both sides, so every layout renders at least once.
-  for (const el of await page.locator('#panel-protocol .control-grid .seg-btn').all()) {
+  for (const el of await page.locator('#panel-protocol .stage-bit .seg-btn').all()) {
     await el.click({ timeout: 1500 }).catch(() => {});
   }
-  // Every cut depth plus the random draw.
+  // Every cut depth plus the random draw, live over a revealed row.
   for (const el of await page.locator('#panel-protocol [data-depth]').all()) {
     await el.click({ timeout: 1500 }).catch(() => {});
   }
-  // The honest-play switch hides the narrator peeks — scan both states.
+  for (const el of await page.locator('#panel-protocol .predict-opt').all()) {
+    await el.click({ timeout: 1500 }).catch(() => {});
+  }
+  // The six-step walkthrough now lives in a disclosure; open it and drive it.
+  await page.getByText('Explain each step').click({ timeout: 3000 }).catch(() => {});
   await click('#hide-cut');
   await clickByText(page, '#panel-protocol', 'Next step');
   await click('#hide-cut');
@@ -57,22 +61,29 @@ async function driveDemos(page: Page): Promise<void> {
   await clickByText(page, '#panel-protocol', 'Show all steps');
   await page.waitForTimeout(150);
 
-  // --- Exhibit 2: why it works ---------------------------------------------
+  // --- Exhibit 2: the orbit transformation ---------------------------------
   await click('#tab-why');
   await page.locator('#panel-why').waitFor({ timeout: 10_000 });
+  // One cut at a time (partial state), then the full sweep, then the other group.
+  await clickByText(page, '#panel-why', 'cut 0');
+  await clickByText(page, '#panel-why', 'Apply all five');
+  await clickByText(page, '#panel-why', 'Start over');
+  await clickByText(page, '#panel-why', 'Start from a row where the spades touch');
+  await clickByText(page, '#panel-why', 'Apply all five');
+  // The finished enumeration is behind a disclosure; open it and click through it.
+  await page.getByText('Show all 10 rows').click({ timeout: 3000 }).catch(() => {});
   for (const el of await page.locator('#panel-why .orbit-row-btn').all()) {
     await el.click({ timeout: 1200 }).catch(() => {});
   }
-  await clickByText(page, '#panel-why', 'Try all five cuts');
   await page.waitForTimeout(150);
 
-  // --- Exhibit 3: what leaks -----------------------------------------------
+  // --- Exhibit 3: privacy --------------------------------------------------
   await click('#tab-leak');
   await page.locator('#panel-leak').waitFor({ timeout: 10_000 });
   for (const el of await page.locator('#panel-leak .predict-opt').all()) {
     await el.click({ timeout: 1200 }).catch(() => {});
   }
-  // Every revealed row, so both posterior shapes (three-way and certain) are scanned.
+  // Every reveal in the reading-rule scrubber, then every row in the posterior.
   for (const el of await page.locator('#panel-leak .seg-wrap .seg-btn').all()) {
     await el.click({ timeout: 1200 }).catch(() => {});
   }
@@ -91,6 +102,9 @@ async function driveDemos(page: Page): Promise<void> {
   // A hand-built distribution via the sliders.
   await page.locator('#cut-weight-0').fill('9').catch(() => {});
   await page.locator('#cut-weight-3').press('ArrowRight').catch(() => {});
+  // The bits, the bystander and the full table live behind a disclosure now.
+  await page.getByText('More detail — leakage in bits').click({ timeout: 3000 }).catch(() => {});
+  await page.getByText('Why the answer is exactly').click({ timeout: 3000 }).catch(() => {});
   // Play a round, both answers, so the right and wrong feedback are both rendered.
   await clickByText(page, '#panel-break', 'Deal a round');
   await clickByText(page, '#panel-break', 'Alice held 0');
@@ -107,6 +121,11 @@ async function driveDemos(page: Page): Promise<void> {
   await page.locator('#adversary-work').fill('20').catch(() => {});
   await page.locator('#adversary-work').fill('300').catch(() => {});
   for (const el of await page.locator('#panel-compare [data-kappa]').all()) {
+    await el.click({ timeout: 1200 }).catch(() => {});
+  }
+  await page.getByText('Where the research went next').click({ timeout: 3000 }).catch(() => {});
+  // All three exit questions, right answers and wrong ones.
+  for (const el of await page.locator('#panel-compare .exit-q .check-opt').all()) {
     await el.click({ timeout: 1200 }).catch(() => {});
   }
   // The matching task, deliberately misaligned so match-ok and match-bad both render.

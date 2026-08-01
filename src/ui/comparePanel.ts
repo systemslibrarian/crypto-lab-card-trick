@@ -61,9 +61,10 @@ export function renderComparePanel(root: HTMLElement): void {
       'info',
       'The honest scoreboard: the card trick computes ONE AND gate, for TWO people, who have to be in the same room with a deck of cards and a dealer nobody suspects. A garbled circuit computes an arbitrary function, for parties on different continents, in milliseconds. What the cards buy is not practicality — it is a security argument that does not expire.',
     ),
-    museumSection(),
-    scopeSection(),
+    conclusionSection(),
     exitSection(),
+    scopeSection(),
+    museumSection(),
   );
 
   repaint();
@@ -177,7 +178,7 @@ function paintFigure(host: HTMLElement): void {
         'ok',
       ),
       statTile(
-        `Garbled circuit (${state.kappa}-bit)`,
+        `Garbled circuit (${state.kappa}-bit), illustrative bound`,
         circuit < 0.001 ? circuit.toExponential(1) : circuit.toFixed(3),
         `bound on the advantage at 2^${state.work} operations`,
         circuit > 0.5 ? 'alarm' : 'neutral',
@@ -196,7 +197,7 @@ function paintFigure(host: HTMLElement): void {
         ),
     note(
       'caveat',
-      'Read the dashed line carefully. It is the best guarantee a κ-bit primitive can offer, not a measured attack, and it is conditional: if the assumption underneath the garbled circuit turns out to be false, the true curve is not this one and there is no floor at all. The solid line has no such clause, which is the entire point — it is a statement about ten arrangements of cardboard, and there is nothing in it for a future algorithm or a future computer to bite on.',
+      'Read the dashed line carefully. It is min(1, 2^(q−κ)) — a GENERIC, ILLUSTRATIVE bound on brute force against a κ-bit primitive. It is not a measured attack, and it is not a tight concrete-security analysis of any particular garbling scheme, whose real curve depends on its proof, its reduction loss and its assumption. It is also conditional: if the assumption underneath turns out to be false, the true curve is not this one and there is no floor at all. The solid line has no such clause, which is the entire point — it is a statement about ten arrangements of cardboard, and there is nothing in it for a future algorithm or a future computer to bite on.',
     ),
     disclosure(
       'The same figure as numbers',
@@ -444,6 +445,51 @@ function museumSection(): HTMLElement {
   );
 }
 
+// ------------------------------------------------------------- the conclusion
+
+/**
+ * Three lines, each one a thing the learner has already made happen on this page.
+ *
+ * An abstract summary at the end of a demo is the moment the argument evaporates; a
+ * summary that points back at an interaction is the moment it lands.
+ */
+function conclusionSection(): HTMLElement {
+  const line = (title: string, body: string, back: string): HTMLElement =>
+    h(
+      'li',
+      {},
+      h('strong', {}, title),
+      ' ',
+      body,
+      h('span', { class: 'conclusion-back' }, back),
+    );
+
+  return h(
+    'section',
+    { class: 'compare-block conclusion' },
+    h('h3', {}, 'What you actually saw'),
+    h(
+      'ul',
+      { class: 'facts conclusion-list' },
+      line(
+        'The card protocol does not care how much work you do.',
+        'Every pair of secrets consistent with the answer produces the same distribution of rows, so the attacker is comparing two things that are equal.',
+        'You watched the three answer-0 columns hold at 20% each, and Bob’s ceiling sit at 50% however long you played.',
+      ),
+      line(
+        'The circuit’s security is a parameter.',
+        'It is safe until an attacker can afford about 2^κ operations, and the whole design problem is choosing κ far enough ahead of the future.',
+        'You pushed the slider past 2^128 and watched the bound go to 1 while the card line did not move.',
+      ),
+      line(
+        'The trade is real in both directions.',
+        'The cards need a trusted physical procedure, compute a single gate, and cannot be composed into a second one — and their guarantee still costs nothing to maintain.',
+        'You broke the whole thing by making one dealer lazy, without touching a single line of cryptography.',
+      ),
+    ),
+  );
+}
+
 // ----------------------------------------------------------------- honest scope
 
 /**
@@ -492,10 +538,35 @@ function scopeSection(): HTMLElement {
         'This is honest-but-curious throughout. A player who places the wrong cards, peeks, or palms one is outside the model, and no exhibit here defends against it.',
       ),
     ),
-    h(
-      'p',
-      { class: 'help' },
-      'Koch and Walzer’s 2022 survey is the map of the whole area if you want to go further.',
+    disclosure(
+      'Where the research went next',
+      h(
+        'ul',
+        { class: 'facts timeline' },
+        h(
+          'li',
+          {},
+          h('strong', {}, '1989 — den Boer. '),
+          'Five cards, one AND gate, a random cut. The protocol on this page, and the start of the field.',
+        ),
+        h(
+          'li',
+          {},
+          h('strong', {}, '2009 — Mizuki and Sone. '),
+          'Four cards for the same gate, using a random bisection in place of the cut. Fewer cards, a different shuffle, a different proof.',
+        ),
+        h(
+          'li',
+          {},
+          h('strong', {}, 'Since. '),
+          'Committed-format protocols whose outputs can be fed into the next gate, formal shuffle models, and lower bounds on how few cards a gate can possibly need.',
+        ),
+      ),
+      h(
+        'p',
+        {},
+        'None of it is implemented here on purpose: a second runnable protocol would split attention before the five-card lesson has landed. Koch and Walzer’s 2022 survey is the map if you want to go further.',
+      ),
     ),
   );
 }
@@ -510,7 +581,7 @@ function exitSection(): HTMLElement {
     h(
       'p',
       { class: 'panel-sub' },
-      'Two questions and a matching task. Nothing is scored and nothing is stored; they are here because answering is how you find out whether the idea actually landed.',
+      'Three questions and a matching task. Nothing is scored and nothing is stored; they are here because answering is how you find out whether the idea actually landed.',
     ),
     exitQuestion(
       'Someone proposes running the five-card trick with a dealer who shuffles “really thoroughly” but always ends by cutting exactly three cards. Is that secure?',
@@ -529,6 +600,15 @@ function exitSection(): HTMLElement {
         { label: 'It stays secure but with a smaller margin', correct: false },
       ],
       'Nothing. The attacker is comparing two distributions that are equal, and speed does not help with that — there is no margin to shrink because there was never a margin, just an equality. This is what “information-theoretic” buys, and it is the reason people still study protocols that can only compute one gate.',
+    ),
+    exitQuestion(
+      'A dealer cuts at random, but only ever by 0 or by 1. Bob holds 0 and sees ♥♠♥♠♥ on the table. What can he conclude?',
+      [
+        { label: 'Nothing — the cut was random', correct: false },
+        { label: 'Alice held 0, with certainty', correct: true },
+        { label: 'Alice probably held 1, but he cannot be sure', correct: false },
+      ],
+      'Alice’s two layouts are three cut positions apart, so cutting by 0 or 1 puts her 0 on two rows and her 1 on two entirely different ones. ♥♠♥♠♥ is in the first pair and nowhere in the second, so it can only have come from Alice holding 0 — certainty, not a lean. This is why “random” is the wrong word for the requirement: the cut has to cover all five depths uniformly, and a random cut over half of them covers none of the gap.',
     ),
     h('h3', {}, 'Match each claim to what actually supports it'),
     matchingTask({

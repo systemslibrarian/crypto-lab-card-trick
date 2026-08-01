@@ -1,12 +1,15 @@
 /**
- * Exhibit 1 — the protocol itself, stepped.
+ * Exhibit 1 — the protocol itself.
  *
  * The one mechanism this lab exists to show is that a *cut* can hide which of three
- * arrangements you started from while leaving a fourth one recognisable. So the
- * stepper never asserts an outcome: it deals the cards, lets the learner choose the
- * cut by hand, turns them over, and reads the answer off the picture. The "try all
- * five cuts" block then does the same thing five times at once, which is the moment
- * the invariance stops being a claim.
+ * arrangements you started from while leaving a fourth one recognisable. So the first
+ * thing on the page is the trick, not a description of it: two bit controls, five
+ * cards, one button. The learner performs it before reading anything about it.
+ *
+ * Everything the earlier version said is still here — the six-step walkthrough, the
+ * jargon scaffolding, the honesty caveats — but it sits *below* the interaction as
+ * material you reach for once you have a question, rather than a wall you climb
+ * before you can play.
  */
 
 import { ALL_SHIFTS, type Bit, type Inputs, type Shift } from '../cards/types.js';
@@ -23,7 +26,6 @@ import {
   h,
   learnerCheck,
   note,
-  panelIntro,
   prediction,
   predictionDebrief,
   scrollIntoCentre,
@@ -37,7 +39,9 @@ interface State {
   shift: Shift;
   /** How the current cut was chosen — the honesty note depends on it. */
   cutSource: 'manual' | 'random';
-  /** Steps revealed so far, 1..STEP_COUNT. */
+  /** Face down until the learner asks for the reveal. */
+  revealed: boolean;
+  /** Steps revealed so far in the long-form walkthrough, 1..STEP_COUNT. */
   shown: number;
   /** Play it like a real game: the page stops printing the cut depth. */
   hideCut: boolean;
@@ -49,29 +53,38 @@ const state: State = {
   inputs: { a: 1, b: 1 },
   shift: 2,
   cutSource: 'manual',
+  revealed: false,
   shown: 1,
   hideCut: false,
 };
 
+/** Focus target for the guided tour: the one action the first screen wants. */
+export const STAGE_ACTION_ID = 'stage-reveal';
+
 export function renderProtocolPanel(root: HTMLElement): void {
+  const stageHost = h('div', { class: 'stage-host' });
+  const invariantHost = h('div', { class: 'invariant-host' });
   const stepHost = h('div', { class: 'steps' });
-  const allCutsHost = h('div', { class: 'all-cuts-host' });
 
   const repaint = (): void => {
+    paintStage(stageHost, repaint);
+    paintInvariant(invariantHost);
     paintSteps(stepHost);
-    paintAllCuts(allCutsHost);
   };
 
   root.replaceChildren(
-    panelIntro(
-      'Two people, one AND gate, five cards',
-      'Alice knows one secret bit. Bob knows another. They want to know whether BOTH bits are 1 — and nothing else. No computers, no keys, no maths problem anybody hopes is hard: five playing cards, laid out in a particular order, cut once, and turned over.',
-      'Set the two bits below, choose how far to cut, and step through it. Then change the cut and watch the answer refuse to move.',
+    stageHost,
+    invariantHost,
+    disclosure(
+      'Explain each step — the six stages, in full',
+      h(
+        'p',
+        {},
+        'The same run you just performed, taken apart. Every card is placed one at a time, the cut is shown before and after, and the read-off is checked against a plain AND gate.',
+      ),
+      stepHost,
     ),
-    glossary(Object.values(TERMS)),
-    controls(repaint),
-    stepHost,
-    allCutsHost,
+    aboutSection(),
     learnerCheck(
       'The row is turned over and you see ♠ ♥ ♥ ♠ ♥. What do you now know about Alice’s bit?',
       [
@@ -79,7 +92,7 @@ export function renderProtocolPanel(root: HTMLElement): void {
         { label: 'It was 1', correct: false },
         { label: 'Nothing — 0 and 1 are still equally likely', correct: true },
       ],
-      'The two spades have hearts between them, so the answer is 0 — and all three input pairs that produce 0 can produce exactly this row, each just as often. Both of Alice’s bits remain exactly as likely as before you looked. The next exhibit shows that as a table you can check cell by cell.',
+      'The two spades have hearts between them, so the answer is 0 — and all three input pairs that produce 0 can produce exactly this row, each just as often. Both of Alice’s bits remain exactly as likely as before you looked. The “Privacy” exhibit shows that as a table you can check cell by cell.',
     ),
     bridge(
       'The read-off gives the right answer for every one of the five cuts, and a different-looking row each time.',
@@ -94,7 +107,100 @@ export function renderProtocolPanel(root: HTMLElement): void {
   repaint();
 }
 
-// ------------------------------------------------------------------ controls
+// ------------------------------------------------------------------- the stage
+//
+// The whole exhibit in one screen: pick two bits, cut, reveal, read the answer.
+// Kept deliberately unframed — the cards are the subject, and a border around them
+// would make them look like one more panel among the eight below.
+
+function paintStage(host: HTMLElement, repaint: () => void): void {
+  const { inputs } = state;
+  const r = run(inputs, state.shift);
+  const expected = andGate(inputs.a, inputs.b);
+
+  const reveal = h(
+    'button',
+    {
+      type: 'button',
+      class: 'btn btn-primary stage-btn',
+      id: STAGE_ACTION_ID,
+      onclick: () => {
+        if (!state.revealed && state.cutSource === 'random') state.shift = uniformShift();
+        state.revealed = !state.revealed;
+        repaint();
+      },
+    },
+    state.revealed ? 'Turn them back over' : 'Cut and reveal',
+  );
+
+  clear(host);
+  host.append(
+    h(
+      'section',
+      { class: 'stage', 'aria-label': 'The five-card trick' },
+      h('h2', { class: 'stage-lead' }, 'Choose two secret bits. Cut the five cards. The row changes; the answer does not.'),
+      h(
+        'div',
+        { class: 'stage-bits' },
+        bitControl('Alice', () => state.inputs.a, (v) => {
+          state.inputs = { ...state.inputs, a: v };
+        }, repaint),
+        bitControl('Bob', () => state.inputs.b, (v) => {
+          state.inputs = { ...state.inputs, b: v };
+        }, repaint),
+      ),
+      h(
+        'div',
+        { class: 'stage-table' },
+        rowEl(state.revealed ? r.revealed : r.beforeCut, {
+          faceUp: state.revealed ? undefined : [false, false, false, false, false],
+          markSpades: state.revealed,
+          animate: state.revealed ? 'flip' : 'deal',
+          ariaLabel: state.revealed
+            ? `The revealed row: ${toKey(r.revealed)}.`
+            : 'Five cards face down on the table.',
+        }),
+      ),
+      h('div', { class: 'stage-action' }, reveal, cutControl(repaint)),
+      h(
+        'div',
+        { class: 'stage-result', role: 'status', 'aria-live': 'polite' },
+        state.revealed
+          ? h(
+              'div',
+              { class: 'stage-result-live' },
+              h(
+                'p',
+                { class: 'readoff-line' },
+                h('span', { class: 'readoff-shape' }, r.adjacent ? '♠♠' : '♠♥♠'),
+                r.adjacent ? ' the two spades are neighbours → ' : ' a heart sits between them → ',
+                h('span', { class: 'output-bit' }, String(r.output)),
+              ),
+              h(
+                'p',
+                { class: 'readoff-check' },
+                `Independently: ${inputs.a} AND ${inputs.b} = ${expected}.`,
+              ),
+              r.output === expected
+                ? verdict('pass', 'the cards and the truth table agree', 'Match')
+                : verdict('fail', 'the cards disagree with the truth table', 'Mismatch'),
+            )
+          : h(
+              'p',
+              { class: 'help stage-hint' },
+              'Alice’s two cards, the dealer’s heart, then Bob’s two — all face down, all identical from the back. Cut and turn them over.',
+            ),
+      ),
+      state.revealed
+        ? h(
+            'p',
+            { class: 'help stage-nudge' },
+            'Now change the cut. The five cards move; the answer does not.',
+          )
+        : null,
+    ),
+  );
+}
 
 function bitControl(
   who: 'Alice' | 'Bob',
@@ -102,7 +208,7 @@ function bitControl(
   set: (b: Bit) => void,
   repaint: () => void,
 ): HTMLElement {
-  const label = `${who}’s secret bit`;
+  const id = `bit-${who.toLowerCase()}-label`;
   const buttons = ([0, 1] as const).map((v) =>
     h(
       'button',
@@ -112,9 +218,6 @@ function bitControl(
         'aria-pressed': String(get() === v),
         onclick: () => {
           set(v);
-          for (const b of buttons) {
-            b.setAttribute('aria-pressed', String(Number(b.textContent) === get()));
-          }
           repaint();
         },
       },
@@ -123,119 +226,223 @@ function bitControl(
   );
   return h(
     'div',
-    { class: 'control' },
-    h('span', { class: 'control-label', id: `bit-${who.toLowerCase()}-label` }, label),
-    h(
-      'div',
-      { class: 'seg', role: 'group', 'aria-labelledby': `bit-${who.toLowerCase()}-label` },
-      ...buttons,
-    ),
-    h(
-      'p',
-      { class: 'help' },
-      `${who} is the only person who knows this. It never leaves ${who === 'Alice' ? 'her' : 'his'} two face-down cards.`,
-    ),
+    { class: 'stage-bit' },
+    // Visibly just the name, so both controls fit on one line of a phone; the group's
+    // accessible name still reads "Alice's secret bit" rather than "Alice".
+    h('span', { class: 'stage-bit-label', id }, who, srOnly('’s secret bit')),
+    h('div', { class: 'seg', role: 'group', 'aria-labelledby': id }, ...buttons),
   );
 }
 
-function controls(repaint: () => void): HTMLElement {
-  const cutButtons: HTMLButtonElement[] = [];
-  const paintCut = (): void => {
-    for (const b of cutButtons) {
-      const depth = b.dataset.depth;
-      const on = depth === 'random' ? state.cutSource === 'random' : Number(depth) === state.shift;
-      b.setAttribute('aria-pressed', String(on));
-    }
-  };
-
-  for (const s of ALL_SHIFTS) {
-    cutButtons.push(
+/**
+ * The cut, as a control the learner drives.
+ *
+ * Six choices rather than five: the five depths are the manual "what if", and the
+ * die is the honest one. Changing a depth while the cards are face up re-cuts them in
+ * place, which is the whole point — the row visibly moves under an answer that does
+ * not, and the answer stays in the same spot on screen so there is nothing to hunt for.
+ */
+function cutControl(repaint: () => void): HTMLElement {
+  const buttons: HTMLButtonElement[] = ALL_SHIFTS.map(
+    (s) =>
       h(
         'button',
         {
           type: 'button',
           class: 'btn seg-btn',
           'data-depth': String(s),
-          'aria-pressed': String(state.shift === s),
+          'aria-pressed': String(state.cutSource === 'manual' && state.shift === s),
           onclick: () => {
             state.shift = s;
             state.cutSource = 'manual';
-            paintCut();
             repaint();
           },
         },
         String(s),
       ) as HTMLButtonElement,
-    );
-  }
-  const randomBtn = h(
-    'button',
-    {
-      type: 'button',
-      class: 'btn btn-primary',
-      'data-depth': 'random',
-      onclick: () => {
-        state.shift = uniformShift();
-        state.cutSource = 'random';
-        paintCut();
-        repaint();
+  );
+  buttons.push(
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'btn seg-btn',
+        'data-depth': 'random',
+        'aria-pressed': String(state.cutSource === 'random'),
+        onclick: () => {
+          state.shift = uniformShift();
+          state.cutSource = 'random';
+          repaint();
+        },
       },
-    },
-    'Cut at random',
-  ) as HTMLButtonElement;
-  cutButtons.push(randomBtn);
+      'random',
+    ) as HTMLButtonElement,
+  );
 
+  return h(
+    'div',
+    { class: 'stage-cut' },
+    h('span', { class: 'stage-cut-label', id: 'stage-cut-label' }, 'Cut by'),
+    h('div', { class: 'seg', role: 'group', 'aria-labelledby': 'stage-cut-label' }, ...buttons),
+  );
+}
+
+// ------------------------------------------------------- the invariant, up front
+
+function paintInvariant(host: HTMLElement): void {
+  const { inputs } = state;
+  const expected = andGate(inputs.a, inputs.b);
+  const rows = ALL_SHIFTS.map((s) => run(inputs, s));
+  const agree = rows.every((r) => r.output === expected);
+
+  clear(host);
+  host.append(
+    h(
+      'section',
+      { class: 'invariant' },
+      h('h3', {}, 'Every cut at once'),
+      h(
+        'p',
+        { class: 'panel-sub' },
+        `Alice is holding ${inputs.a}, Bob is holding ${inputs.b}. Five cuts, five different rows on the table — and the same answer read off every one of them.`,
+      ),
+      h(
+        'div',
+        { class: 'cut-grid' },
+        ...rows.map((r) =>
+          h(
+            'div',
+            { class: `cut-cell ${r.shift === state.shift ? 'cut-cell-now' : ''}` },
+            h(
+              'span',
+              { class: 'cut-cell-label' },
+              `Cut ${r.shift}`,
+              r.shift === state.shift ? h('span', { class: 'cut-cell-now-tag' }, ' on the table') : null,
+            ),
+            rowEl(r.revealed, {
+              markSpades: true,
+              ariaLabel: `Cut ${r.shift} reveals ${toKey(r.revealed)}, which reads ${r.output}.`,
+            }),
+            h(
+              'span',
+              { class: `pill pill-${r.output === expected ? 'ok' : 'bad'}` },
+              h('span', { 'aria-hidden': 'true' }, r.output === expected ? '✓' : '✕'),
+              `reads ${r.output}`,
+            ),
+          ),
+        ),
+      ),
+      agree
+        ? verdict(
+            'pass',
+            `all five cuts read ${expected}, which is ${inputs.a} AND ${inputs.b}`,
+            'Invariant',
+          )
+        : verdict('fail', 'the cuts disagree — the read-off is not cut-invariant', 'Broken'),
+      prediction(
+        'cut-invariance',
+        'Change one of the bits above. Before you look — will all five cuts still agree with each other?',
+        [
+          { label: 'Yes — always, whatever the bits', correct: true },
+          { label: 'No — some cuts will disagree', correct: false },
+          { label: 'Only when the answer is 0', correct: false },
+        ],
+      ),
+      predictionDebrief(
+        'cut-invariance',
+        'The cut rearranges which card is in which position, but it cannot change which cards are next to each other around the ring — and “next to each other” is the entire read-off. That holds for every pair of bits, which is why the row above never breaks.',
+      ),
+      disclosure(
+        'The same five rows as text',
+        h(
+          'p',
+          {},
+          'Read each one as a ring: the last character’s neighbour is the first. That wrap-around is the only reason the read-off survives a cut.',
+        ),
+        h(
+          'ul',
+          { class: 'facts' },
+          ...rows.map((r) =>
+            h(
+              'li',
+              {},
+              code(`cut ${r.shift}: ${toKey(r.revealed)}`),
+              ` → ${r.adjacent ? 'spades touch' : 'spades apart'} → ${r.output}`,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+// ------------------------------------------------------ what is actually going on
+
+/**
+ * The prose that used to open the panel, now placed where a learner reaches it
+ * *after* the trick has raised a question rather than before they have one.
+ */
+function aboutSection(): HTMLElement {
+  return h(
+    'section',
+    { class: 'about' },
+    h('h3', {}, 'What just happened'),
+    h(
+      'p',
+      {},
+      'Alice knows one secret bit. Bob knows another. They want to know whether BOTH bits are 1 — and nothing else. No computers, no keys, no maths problem anybody hopes is hard: five playing cards, laid out in a particular order, cut once, and turned over.',
+    ),
+    h(
+      'p',
+      {},
+      'A pair of face-down cards is a ',
+      h('strong', {}, 'commitment'),
+      ': ♠♥ means 1, ♥♠ means 0. Both use the same two cards, so a pair face down looks identical whichever bit it holds — only the order carries the secret. Alice commits to her bit, the dealer adds a heart in the middle, and Bob commits to the ',
+      h('em', {}, 'negation'),
+      ' of his. Then somebody cuts the ring and everyone looks.',
+    ),
+    h(
+      'div',
+      { class: 'encoding' },
+      encodingCard(1),
+      encodingCard(0),
+    ),
+    termAside(TERMS.cut),
+    note(
+      'caveat',
+      'The cut is simulated. A browser cannot shuffle a physical deck, so “random” draws from your platform’s cryptographic random source, and — unlike a real dealer — this page knows the number it drew. That is a limitation of the demo, not of the protocol. The switch below hides it if you would rather play it straight.',
+    ),
+    honestPlayControl(),
+    glossary(Object.values(TERMS)),
+  );
+}
+
+function honestPlayControl(): HTMLElement {
   const hide = h('input', { type: 'checkbox', id: 'hide-cut' }) as HTMLInputElement;
   hide.checked = state.hideCut;
   hide.addEventListener('change', () => {
     state.hideCut = hide.checked;
-    repaint();
+    const host = document.querySelector<HTMLElement>('.steps');
+    if (host) paintSteps(host);
   });
-
   return h(
     'div',
-    { class: 'controls' },
-    h(
-      'div',
-      { class: 'control-grid' },
-      bitControl(
-        'Alice',
-        () => state.inputs.a,
-        (v) => {
-          state.inputs = { ...state.inputs, a: v };
-        },
-        repaint,
-      ),
-      bitControl(
-        'Bob',
-        () => state.inputs.b,
-        (v) => {
-          state.inputs = { ...state.inputs, b: v };
-        },
-        repaint,
-      ),
-    ),
-    h(
-      'div',
-      { class: 'control' },
-      h('span', { class: 'control-label', id: 'cut-label' }, 'How far to cut the deck'),
-      h('div', { class: 'seg-wrap', role: 'group', 'aria-labelledby': 'cut-label' }, ...cutButtons),
-      h(
-        'p',
-        { class: 'help' },
-        'Lift this many cards off the left end and put them on the right. In a real game nobody chooses — and nobody knows.',
-      ),
-    ),
-    h(
-      'div',
-      { class: 'control control-inline-row' },
-      hide,
-      h('label', { for: 'hide-cut' }, 'Play it honestly — don’t show me the cut depth'),
-    ),
-    note(
-      'caveat',
-      'The cut is simulated. A browser cannot shuffle a physical deck, so “Cut at random” draws from your platform’s cryptographic random source, and — unlike a real dealer — this page knows the answer it drew. That is a limitation of the demo, not of the protocol; the box above hides the number if you would rather play it straight.',
-    ),
+    { class: 'control control-inline-row' },
+    hide,
+    h('label', { for: 'hide-cut' }, 'Play it honestly — don’t show me the cut depth'),
+  );
+}
+
+function encodingCard(bit: Bit): HTMLElement {
+  const pair = commit(bit);
+  return h(
+    'div',
+    { class: 'encoding-item' },
+    rowEl([pair[0], pair[1], 'heart', 'heart', 'heart'], {
+      faceUp: [true, true, false, false, false],
+      ariaLabel: `The encoding of ${bit}`,
+    }),
+    h('span', { class: 'encoding-label' }, `means ${bit}`),
   );
 }
 
@@ -260,15 +467,10 @@ function steps(): StepSpec[] {
       lead: 'Five cards, and a rule for what a pair of them means. Everything else is placement.',
       term: 'commitment',
       body: () => [
-        h(
-          'div',
-          { class: 'encoding' },
-          encodingCard(1),
-          encodingCard(0),
-        ),
+        h('div', { class: 'encoding' }, encodingCard(1), encodingCard(0)),
         h(
           'p',
-          { class: 'help' },
+          { class: 'step-note' },
           'Both encodings use one spade and one heart — the same two cards. Only the order differs, and once they are face down the order is exactly what nobody can see.',
         ),
       ],
@@ -285,9 +487,9 @@ function steps(): StepSpec[] {
         h(
           'p',
           { class: 'step-note' },
-          'From Bob’s side of the table this is the same picture whichever bit she chose. ',
-          state.hideCut ? null : peek(`Alice played ${toPair(aliceCards)} — the encoding of ${inputs.a}.`),
+          'From Bob’s side of the table this is the same picture whichever bit she chose.',
         ),
+        state.hideCut ? null : peek(`Alice played ${toPair(aliceCards)} — the encoding of ${inputs.a}.`),
       ],
     },
     {
@@ -363,7 +565,7 @@ function steps(): StepSpec[] {
         ),
         note(
           'info',
-          'Both rings show the cards still face down as far as the players are concerned — they are drawn face up here only so you can watch the rotation. Look at which cards are next to which: the ring turned, and every neighbour stayed a neighbour.',
+          'Both rings show the cards face up only so you can watch the rotation — the players still see backs. Look at which cards are next to which: the ring turned, and every neighbour stayed a neighbour.',
         ),
       ],
     },
@@ -392,7 +594,7 @@ function steps(): StepSpec[] {
             ),
             h(
               'p',
-              { class: 'both-sides-eq' },
+              { class: 'readoff-check' },
               `Independently: ${state.inputs.a} AND ${state.inputs.b} = ${andGate(state.inputs.a, state.inputs.b)}.`,
             ),
             r.output === andGate(state.inputs.a, state.inputs.b)
@@ -462,7 +664,6 @@ function paintSteps(host: HTMLElement): void {
     h(
       'div',
       { class: 'step-bar' },
-      h('span', { class: 'trace-tag' }, 'WALKTHROUGH'),
       next,
       all,
       reset,
@@ -473,7 +674,7 @@ function paintSteps(host: HTMLElement): void {
         'section',
         { class: 'step-card reveal' },
         h('span', { class: 'trace-tag' }, `STEP ${i + 1}`),
-        h('h3', {}, spec.title),
+        h('h4', {}, spec.title),
         h('p', { class: 'step-lead' }, spec.lead),
         spec.term ? termAside(TERMS[spec.term]) : null,
         h('div', { class: 'step-body' }, ...spec.body()),
@@ -482,104 +683,7 @@ function paintSteps(host: HTMLElement): void {
   );
 }
 
-// ------------------------------------------------------------- all five cuts
-
-function paintAllCuts(host: HTMLElement): void {
-  const { inputs } = state;
-  const expected = andGate(inputs.a, inputs.b);
-  const rows = ALL_SHIFTS.map((s) => run(inputs, s));
-  const agree = rows.every((r) => r.output === expected);
-
-  clear(host);
-  host.append(
-    h(
-      'section',
-      { class: 'aha' },
-      h('h3', {}, 'Every cut, side by side'),
-      h(
-        'p',
-        { class: 'panel-sub' },
-        `Alice is holding ${inputs.a} and Bob is holding ${inputs.b}. Here is what the table looks like after each of the five possible cuts. Five different rows — read the answer off each one.`,
-      ),
-      prediction(
-        'cut-invariance',
-        'Before you look: do all five cuts give the same answer?',
-        [
-          { label: 'Yes — all five agree', correct: true },
-          { label: 'No — some cuts give the wrong answer', correct: false },
-          { label: 'It depends on the two bits', correct: false },
-        ],
-      ),
-      h(
-        'div',
-        { class: 'cut-grid' },
-        ...rows.map((r) =>
-          h(
-            'div',
-            { class: 'cut-cell' },
-            h('span', { class: 'cut-cell-label' }, `Cut ${r.shift}`),
-            rowEl(r.revealed, {
-              markSpades: true,
-              ariaLabel: `Cut ${r.shift} reveals ${toKey(r.revealed)}, which reads ${r.output}.`,
-            }),
-            h(
-              'span',
-              { class: `pill pill-${r.output === expected ? 'ok' : 'bad'}` },
-              h('span', { 'aria-hidden': 'true' }, r.output === expected ? '✓ ' : '✕ '),
-              `reads ${r.output}`,
-            ),
-          ),
-        ),
-      ),
-      agree
-        ? verdict(
-            'pass',
-            `all five cuts read ${expected}, which is ${inputs.a} AND ${inputs.b}`,
-            'Invariant',
-          )
-        : verdict('fail', 'the cuts disagree — the read-off is not cut-invariant', 'Broken'),
-      predictionDebrief(
-        'cut-invariance',
-        'The cut rearranges which card is in which position, but it cannot change which cards are next to each other around the ring — and “next to each other” is the entire read-off. That is why the answer survives.',
-      ),
-      disclosure(
-        'The same thing in one line of text',
-        h(
-          'p',
-          {},
-          'Each row below is the same five cards, rotated. Read them as rings — the last character’s neighbour is the first.',
-        ),
-        h(
-          'ul',
-          { class: 'facts' },
-          ...rows.map((r) =>
-            h(
-              'li',
-              {},
-              code(`cut ${r.shift}: ${toKey(r.revealed)}`),
-              ` → ${r.adjacent ? 'spades touch' : 'spades apart'} → ${r.output}`,
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
 // ------------------------------------------------------------------- bits & bobs
-
-function encodingCard(bit: Bit): HTMLElement {
-  const pair = commit(bit);
-  return h(
-    'div',
-    { class: 'encoding-item' },
-    rowEl([pair[0], pair[1], 'heart', 'heart', 'heart'], {
-      faceUp: [true, true, false, false, false],
-      ariaLabel: `The encoding of ${bit}`,
-    }),
-    h('span', { class: 'encoding-label' }, `means ${bit}`),
-  );
-}
 
 /** A value only the narrator gets to see, marked as such rather than smuggled in. */
 function peek(text: string): HTMLElement {

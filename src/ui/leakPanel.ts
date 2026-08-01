@@ -64,6 +64,7 @@ export function renderLeakPanel(root: HTMLElement): void {
         { label: 'Different rows entirely', correct: false },
       ],
     ),
+    readingSection(),
     tableSection(),
     predictionDebrief(
       'leak-table',
@@ -92,6 +93,99 @@ export function renderLeakPanel(root: HTMLElement): void {
         label: 'Break the shuffle yourself →',
         onClick: () => document.getElementById('tab-break')?.click(),
       },
+    ),
+  );
+}
+
+// ------------------------------------------------- one reveal at a time, first
+//
+// A probability matrix is the right evidence and the wrong on-ramp. Before asking a
+// newcomer to parse forty cells, give them the reading rule and one column: here is a
+// revealed row, here is how often each of the three secrets that could explain it
+// produces it, and here they are side by side. Scrub through all five and the numbers
+// never move. THEN show the matrix.
+
+const ZERO_PAIRS: readonly Inputs[] = ALL_INPUTS.filter((x) => !(x.a === 1 && x.b === 1));
+
+function readingSection(): HTMLElement {
+  const out = h('div', { class: 'reading-out', role: 'status', 'aria-live': 'polite' });
+  // The five rows an answer of 0 can produce — the only ones where three different
+  // secrets are in play and there is therefore anything to compare.
+  const keys = ROW_KEYS.slice(0, 5);
+  let selected = 0;
+
+  const buttons = keys.map((key, i) =>
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'btn seg-btn',
+        'aria-pressed': String(i === 0),
+        onclick: () => {
+          selected = i;
+          for (const [j, b] of buttons.entries()) b.setAttribute('aria-pressed', String(j === selected));
+          paint();
+        },
+      },
+      key,
+    ),
+  );
+
+  const paint = (): void => {
+    const key = keys[selected];
+    const idx = ROW_KEYS.indexOf(key);
+    const seq = fromKey(key);
+    const values = ZERO_PAIRS.map((x) => revealDist(x, UNIFORM_CUT)[idx]);
+    const allEqual = values.every((v) => Math.abs(v - values[0]) < 1e-12);
+
+    clear(out);
+    out.append(
+      h(
+        'div',
+        { class: 'reading-row' },
+        seq ? rowEl(seq, { markSpades: true, ariaLabel: `The revealed row ${key}` }) : null,
+        h('p', { class: 'help' }, 'How often does each pair of secrets produce exactly this row?'),
+      ),
+      h(
+        'div',
+        { class: 'reading-cols' },
+        ...ZERO_PAIRS.map((x, i) =>
+          h(
+            'div',
+            { class: 'reading-col' },
+            h('span', { class: 'reading-col-label' }, label(x)),
+            h('span', { class: 'reading-col-value' }, `${(values[i] * 100).toFixed(0)}%`),
+            h('span', { class: 'reading-col-frac' }, '1 time in 5'),
+          ),
+        ),
+      ),
+      allEqual
+        ? verdict('pass', 'all three are the same number — this row is no evidence about anybody’s bit', 'Aligned')
+        : verdict('alarm', 'the three differ, so this row is evidence', 'Separated'),
+    );
+  };
+
+  paint();
+
+  return h(
+    'section',
+    { class: 'aha' },
+    h('h3', {}, 'The reading rule, one row at a time'),
+    h(
+      'p',
+      { class: 'panel-sub' },
+      'For every revealed row, compare the three pairs of secrets whose answer is 0. If the three numbers ever differ, the row is a clue. If they always match, there is nothing in the cards to read.',
+    ),
+    h(
+      'div',
+      { class: 'seg-wrap', role: 'group', 'aria-label': 'Choose a revealed row to compare' },
+      ...buttons,
+    ),
+    out,
+    h(
+      'p',
+      { class: 'help' },
+      'Scrub through all five. The three numbers stay locked together every time — which is the whole privacy claim, before a single probability table.',
     ),
   );
 }

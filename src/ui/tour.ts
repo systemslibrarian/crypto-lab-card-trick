@@ -1,12 +1,15 @@
 /**
- * A guided path through the five exhibits.
+ * The lesson path through the five exhibits.
  *
- * The exhibits are an argument, not a menu: the protocol establishes that the answer
- * survives the cut, the orbit picture says why, the leak table asks what the row
- * costs, the broken dealer shows what the guarantee was resting on, and the
- * comparison says why any of it matters. Read out of order they are five unrelated
- * pages. The tour exists so a newcomer gets the argument, and it stays entirely
- * optional so an expert can ignore it.
+ * The exhibits are an argument, not a menu: perform the trick, prove it is correct,
+ * prove it is private, break the assumption it rests on, then place it beside how
+ * computers do the same job. Read out of order they are five unrelated pages.
+ *
+ * The tour used to announce itself with a panel the size of the interaction it was
+ * introducing, which pushed the cards below three screenfolds on a phone. It is now a
+ * single control beside the tabs: off by default, one click to follow the path, and
+ * one click to leave. Starting it focuses the first *action* rather than merely
+ * selecting a tab, so "guided" means the learner is standing in front of the cards.
  *
  * Progress lives in sessionStorage: it survives a reload, and it dies with the tab.
  */
@@ -19,38 +22,41 @@ interface Stop {
   key: PanelKey;
   label: string;
   blurb: string;
+  /** The one control this stop wants the learner's hands on. */
+  focus?: string;
 }
 
 const STOPS: readonly Stop[] = [
   {
     key: 'protocol',
-    label: 'Deal the cards',
+    label: 'Perform it',
     blurb:
-      'Set the two secret bits, choose how far to cut, and step through the protocol. Then look at all five cuts at once and notice that the answer never moves.',
+      'Set the two secret bits, cut, and reveal. Then change the cut and watch the row move under an answer that does not.',
+    focus: 'stage-reveal',
   },
   {
     key: 'why',
-    label: 'See why the cut is harmless',
+    label: 'Prove it is correct',
     blurb:
-      'Ten possible rows, two groups, and no cut that ever crosses between them. This is the whole proof, and you can click every case in it.',
+      'Ten possible rows, two groups, and no cut that ever crosses between them. Apply every cut to one row and fail to escape.',
   },
   {
     key: 'leak',
-    label: 'Ask what the row costs',
+    label: 'Prove it is private',
     blurb:
-      'The answer survived the cut — but did the secrets? Compare the probability tables for the three input pairs that give the same answer.',
+      'The answer survived the cut — but did the secrets? Compare the three input pairs that give the same answer, one reveal at a time.',
   },
   {
     key: 'break',
-    label: 'Break the dealer',
+    label: 'Break the assumption',
     blurb:
-      'All of that rested on one word: uniform. Move the sliders and watch a protocol with no computational assumptions fall apart anyway.',
+      'All of that rested on one word: uniform. Make the dealer sloppy and watch a protocol with no computational assumptions fall apart anyway.',
   },
   {
     key: 'compare',
-    label: 'Place it next to a computer',
+    label: 'Compare the models',
     blurb:
-      'Why does anyone study a protocol that computes one gate? Because of what its security does not depend on.',
+      'Why study a protocol that computes one gate? Because of what its security does not depend on.',
   },
 ];
 
@@ -78,12 +84,7 @@ export function createTour(select: (key: PanelKey) => void): TourApi {
   const paint = (): void => {
     if (!host) return;
     clear(host);
-    if (stop === null) {
-      host.append(invite());
-      paintTabMap(null);
-      return;
-    }
-    host.append(bar());
+    host.append(stop === null ? invite() : bar());
     paintTabMap(stop);
   };
 
@@ -91,8 +92,16 @@ export function createTour(select: (key: PanelKey) => void): TourApi {
     stop = next;
     save();
     paint();
-    if (next !== null) {
-      select(STOPS[next].key);
+    if (next === null) return;
+    select(STOPS[next].key);
+    // Focus the action, not the panel: a guided learner should find their hands on
+    // the control the stop is about, which is also what makes the tour usable from
+    // the keyboard alone.
+    const target = STOPS[next].focus ? document.getElementById(STOPS[next].focus!) : null;
+    if (target) {
+      target.focus();
+      scrollIntoCentre(target);
+    } else {
       const el = document.getElementById(`panel-${STOPS[next].key}`);
       if (el) scrollIntoCentre(el);
     }
@@ -100,35 +109,23 @@ export function createTour(select: (key: PanelKey) => void): TourApi {
 
   const invite = (): HTMLElement =>
     h(
-      'aside',
-      { class: 'tour-invite', id: 'tour-invite', 'aria-label': 'Guided tour' },
+      'div',
+      { class: 'tour-invite', id: 'tour-invite' },
       h(
-        'div',
-        { class: 'tour-invite-main' },
-        h('p', { class: 'tour-invite-title' }, 'New to this? The five exhibits are one argument.'),
-        h(
-          'p',
-          { class: 'tour-invite-promise' },
-          'Five stops, in order: deal the cards, see why the cut is harmless, ask what the reveal costs, break it yourself, then place it next to how computers do the same job. You can leave at any point and everything stays where it is.',
-        ),
-      ),
-      h(
-        'div',
-        { class: 'tour-invite-actions' },
-        h(
-          'button',
-          {
-            type: 'button',
-            class: 'btn btn-primary tour-start-btn',
-            onclick: () => {
-              resetPredictions();
-              go(0);
-            },
+        'button',
+        {
+          type: 'button',
+          class: 'btn btn-ghost tour-toggle',
+          'aria-pressed': 'false',
+          onclick: () => {
+            resetPredictions();
+            go(0);
           },
-          'Start the guided tour',
-        ),
-        h('span', { class: 'help' }, `${STOPS.length} stops · no account, nothing stored`),
+        },
+        h('span', { class: 'tour-toggle-icon', 'aria-hidden': 'true' }, '▸ '),
+        'Guided mode',
       ),
+      h('span', { class: 'tour-invite-hint' }, 'walks the five exhibits in order'),
     );
 
   const bar = (): HTMLElement => {
@@ -137,7 +134,7 @@ export function createTour(select: (key: PanelKey) => void): TourApi {
     const last = at === STOPS.length - 1;
     return h(
       'aside',
-      { class: 'tour-bar', id: 'tour-bar', 'aria-label': 'Guided tour' },
+      { class: 'tour-bar', id: 'tour-bar', 'aria-label': 'Guided mode' },
       h(
         'div',
         { class: 'tour-head' },

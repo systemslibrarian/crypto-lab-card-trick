@@ -268,6 +268,41 @@ export function distributionTable(w: CutWeights): readonly {
   }));
 }
 
+export interface EvidenceRow {
+  readonly key: string;
+  /** P[this row | Alice held 0], given Bob holds 0. */
+  readonly ifZero: number;
+  /** P[this row | Alice held 1], given Bob holds 0. */
+  readonly ifOne: number;
+  /** The bit this row is evidence FOR, or null when it says nothing. */
+  readonly points: Bit | null;
+  /** True when only one of Alice's bits can produce this row at all. */
+  readonly exclusive: boolean;
+}
+
+/**
+ * Which revealed rows actually became evidence — the attack, named row by row.
+ *
+ * A leakage figure says *that* the protocol broke; this says *how*. Bob holds 0, so
+ * the answer is 0 either way and everything he learns comes from the row in front of
+ * him. Any row he sees more often under one of Alice's bits than the other is a clue,
+ * and a row only one of them can produce settles it outright.
+ *
+ * This is a presentation view over `revealDist`, not a second analysis: the same
+ * function that prints the zeros next door decides every number here.
+ */
+export function evidenceRows(w: CutWeights): readonly EvidenceRow[] {
+  const zero = revealDist({ a: 0, b: 0 }, w);
+  const one = revealDist({ a: 1, b: 0 }, w);
+  return ROW_KEYS.map((key, i): EvidenceRow => {
+    const ifZero = zero[i];
+    const ifOne = one[i];
+    const same = Math.abs(ifZero - ifOne) < 1e-12;
+    const points: Bit | null = same ? null : ifZero > ifOne ? 0 : 1;
+    return { key, ifZero, ifOne, points, exclusive: !same && (ifZero === 0 || ifOne === 0) };
+  }).filter((r) => r.ifZero > 0 || r.ifOne > 0);
+}
+
 /**
  * Which cut depth would have produced this row from these inputs.
  *
