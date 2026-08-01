@@ -138,9 +138,12 @@ export function fromKey(key: string): Sequence | null {
  * C(5,2) = 10 rows. Small enough that the lab never has to sample anything — every
  * probability on the page is a count over this set, not a Monte Carlo estimate.
  *
- * [extension] point — a four-card protocol (Mizuki–Kumamoto–Sone 2012) has C(4,2) = 6 rows
- * and acts by Z4 rather than Z5; this enumeration and `necklace.ts` are where a
- * second deck size would be parameterised.
+ * [extension] point — the four-card AND of Mizuki–Kumamoto–Sone (ASIACRYPT 2012) is not a
+ * smaller version of this: it shuffles twice (a random bisection cut of the four-card
+ * row, then a random cut of the middle two cards) and reads its answer off two turned
+ * cards rather than off a ring, so it needs its own state machine rather than a
+ * re-parameterised `cut`. A second deck size for a *cut*-based protocol would enter
+ * here and in `necklace.ts`.
  */
 export function allLegalRows(): readonly Sequence[] {
   const rows: Sequence[] = [];

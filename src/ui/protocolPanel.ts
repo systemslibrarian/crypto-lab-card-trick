@@ -700,8 +700,10 @@ function toPair(pair: readonly ['spade' | 'heart', 'spade' | 'heart']): string {
   return pair.map((c) => (c === 'spade' ? '♠' : '♥')).join('');
 }
 
-// [extension] point — a four-card AND (Mizuki–Kumamoto–Sone 2012) drops the dealer's heart and
-// replaces the cut with a random bisection of two card pairs, reading the answer off a
-// two-card block. It would enter here as a second `steps()` script; `layout`/`cut` in
-// protocol.ts and the orbit enumeration in necklace.ts are the only other places that
-// assume the deck is five cards and the group is Z5.
+// [extension] point — a four-card AND (Mizuki–Kumamoto–Sone, ASIACRYPT 2012) drops the
+// dealer's heart and shuffles twice: a random bisection cut of the whole four-card row,
+// then a random cut of the middle two cards, after which the second card is turned and
+// then either the fourth or the first. Same type means 1, different means 0. It would
+// enter here as a second `steps()` script, but it needs its own state machine —
+// `layout`/`cut` in protocol.ts and the orbit enumeration in necklace.ts assume a single
+// cut of five cards acting as Z5, which that protocol is not.

@@ -119,7 +119,7 @@ function figureControls(repaint: () => void): HTMLElement {
       h(
         'p',
         { class: 'help' },
-        'Operations, as a power of two. For scale: 2^60 is roughly what a large cluster gets through in a year; 2^92 is the most work ever spent on a public cryptanalysis.',
+        'Operations, as a power of two. For scale: the 2017 SHAttered collision spent about 2^63 SHA-1 compressions — 6,500 CPU-years and 110 GPU-years — to produce two colliding PDFs. 2^80 is the line designers have long treated as the edge of feasible, and 2^128 is where modern parameters are set so that the edge stays far away.',
       ),
     ),
     h(
@@ -135,6 +135,18 @@ function figureControls(repaint: () => void): HTMLElement {
 function circuitBound(work: number, kappa: number): number {
   return Math.min(1, 2 ** (work - kappa));
 }
+
+/**
+ * Where the dashed line stops being something anyone would call negligible.
+ *
+ * A display threshold, stated on screen rather than assumed: 2^-32 is not a standard,
+ * it is simply far enough below 1 that no reader will argue the bound is still small
+ * once it is above it. The card trick's line has no equivalent number because its
+ * advantage is 0 rather than small.
+ */
+const NEGLIGIBLE = 2 ** -32;
+
+const fmtBound = (v: number): string => (v < 0.001 ? v.toExponential(1) : v.toFixed(3));
 
 function paintFigure(host: HTMLElement): void {
   const cardAdvantage = bobLeak(UNIFORM_CUT).find((l) => l.known === 0)!.tv;
@@ -184,15 +196,19 @@ function paintFigure(host: HTMLElement): void {
         circuit > 0.5 ? 'alarm' : 'neutral',
       ),
     ),
-    state.work >= state.kappa
+    // The verdict is read off the same `circuitBound` value the tile prints, not off
+    // the slider position: "work >= kappa" would call a bound of 0.06 safe simply
+    // because the exponent had not crossed yet, which is the kind of banner that
+    // would say the same thing whatever the arithmetic did.
+    circuit >= NEGLIGIBLE
       ? verdict(
           'alarm',
-          `at 2^${state.work} operations the ${state.kappa}-bit bound is worthless, while the card trick's advantage is still exactly ${cardAdvantage.toFixed(3)}`,
-          'Bound exhausted',
+          `at 2^${state.work} operations the ${state.kappa}-bit bound has already risen to ${fmtBound(circuit)} — past 2^-32, which nobody would call negligible — while the card trick's advantage is still exactly ${cardAdvantage.toFixed(3)}`,
+          'Bound eroding',
         )
       : verdict(
           'pass',
-          `both are safe at 2^${state.work} operations — but only one of them is still safe at 2^${state.kappa + 40}`,
+          `the ${state.kappa}-bit bound is ${fmtBound(circuit)} at 2^${state.work} operations, and the card trick's advantage is ${cardAdvantage.toFixed(3)} — at this point on the axis and at every other one`,
           'Both hold',
         ),
     note(
@@ -359,7 +375,8 @@ const ROWS: readonly CompareRow[] = [
   {
     question: 'What does it need in practice?',
     cards: 'Five cards, a table, and a dealer both players trust to cut fairly.',
-    circuit: 'A network, a few megabytes per gate, and a working implementation.',
+    circuit:
+      'A network, a working implementation, and bandwidth proportional to the circuit — with half-gates (Zahur–Rosulek–Evans 2015) two ciphertexts per AND gate and none at all per XOR, so roughly 32 bytes per AND gate at 128-bit security.',
   },
   {
     question: 'Where is it actually used?',
@@ -517,7 +534,7 @@ function scopeSection(): HTMLElement {
         'li',
         {},
         h('strong', {}, 'Fewer cards. '),
-        'Mizuki, Kumamoto and Sone (2012) compute AND with four cards by replacing the cut with a random bisection — a different shuffle, not a smaller version of this one. The lower bounds on how few cards a gate can need are their own literature.',
+        'Mizuki, Kumamoto and Sone (ASIACRYPT 2012) compute the same gate with four cards — the two commitments and nothing else. It is not a smaller version of this protocol: they shuffle twice, first a random bisection cut of the whole four-card row and then a random cut of the middle two cards, and then read the answer off two revealed cards rather than off a ring. The lower bounds on how few cards a gate can need are their own literature.',
       ),
       h(
         'li',
@@ -553,7 +570,7 @@ function scopeSection(): HTMLElement {
           'li',
           {},
           h('strong', {}, '2012 — Mizuki, Kumamoto and Sone. '),
-          'Four cards for the same gate, using a random bisection in place of the cut. Fewer cards, a different shuffle, a different proof.',
+          'Four cards for the same gate: a random bisection cut of the row, then a random cut of the middle pair, then two cards turned over. Fewer cards, two shuffles instead of one, a different proof.',
         ),
         h(
           'li',
@@ -565,7 +582,9 @@ function scopeSection(): HTMLElement {
       h(
         'p',
         {},
-        'None of it is implemented here on purpose: a second runnable protocol would split attention before the five-card lesson has landed. Koch and Walzer’s 2022 survey is the map if you want to go further.',
+        'None of it is implemented here on purpose: a second runnable protocol would split attention before the five-card lesson has landed. Alexander Koch’s ',
+        extLink('https://eprint.iacr.org/2018/951', 'The Landscape of Optimal Card-based Protocols'),
+        ' is the map if you want to go further — it collects the card-minimal protocols, the shuffle restrictions they need, and the lower bounds on the number of cards.',
       ),
     ),
   );

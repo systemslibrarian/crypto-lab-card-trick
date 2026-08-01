@@ -145,9 +145,12 @@ You can:
 ## Real-World Usage
 
 Card-based cryptography is a small but live research area. den Boer's 1989 construction
-started it; Mizuki, Kumamoto and Sone's four-card AND (2012) reduced the deck; Koch and Walzer's 2022
-survey collects the protocol zoo, the shuffle models, and the lower bounds on how few cards
-a gate can need. The practical uses are education, unplugged-computing outreach, and
+started it; Mizuki, Kumamoto and Sone's four-card AND (ASIACRYPT 2012) reduced the deck, at
+the cost of two shuffles instead of one — a random bisection cut of the row, then a random
+cut of the middle pair; Alexander Koch's [*The Landscape of Optimal Card-based
+Protocols*](https://eprint.iacr.org/2018/951) collects the card-minimal protocols, the
+shuffle restrictions they need, and the lower bounds on how few cards a gate can need. The
+practical uses are education, unplugged-computing outreach, and
 low-tech settings where a physical procedure is more trustworthy to its participants than a
 computer they cannot inspect.
 

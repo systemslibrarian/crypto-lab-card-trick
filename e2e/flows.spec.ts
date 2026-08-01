@@ -305,7 +305,7 @@ test.describe('cards vs circuits', () => {
     await expect(page.locator('#panel-compare .verdict-pass')).toContainText('Both hold');
 
     await page.locator('#adversary-work').fill('300');
-    await expect(page.locator('#panel-compare .verdict-alarm')).toContainText('Bound exhausted');
+    await expect(page.locator('#panel-compare .verdict-alarm')).toContainText('Bound eroding');
     await expect(page.locator('#panel-compare .stat').nth(0)).toContainText('0.000');
     expect(errors).toEqual([]);
   });

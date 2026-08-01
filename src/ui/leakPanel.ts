@@ -16,16 +16,18 @@
 import { ALL_INPUTS, type Bit, type Inputs } from '../cards/types.js';
 import {
   ROW_KEYS,
+  aliceLeak,
   bobLeak,
   distributionTable,
   excessLeakageBits,
   observerSuccess,
   posterior,
   revealDist,
+  shiftFor,
   totalVariation,
 } from '../cards/analysis.js';
 import { UNIFORM_CUT } from '../cards/shuffle.js';
-import { fromKey } from '../cards/protocol.js';
+import { fromKey, layout, toKey } from '../cards/protocol.js';
 import { rowEl } from './cards.js';
 import {
   TERMS,
@@ -373,18 +375,58 @@ function bobSection(): HTMLElement {
       { class: 'help' },
       `And a bystander who knows neither bit: naming the pair of secrets after seeing the row succeeds ${(obs.fromRow * 100).toFixed(0)}% of the time — exactly the ${(obs.fromOutput * 100).toFixed(0)}% they would manage from hearing the answer announced and never seeing the table at all.`,
     ),
-    disclosure(
-      'Why Alice is in the same position',
-      h(
-        'p',
-        {},
-        'Nothing above is special to Bob. Alice holding 0 learns nothing about Bob’s bit either, by the same argument with the roles swapped — her two possible layouts are also rotations of one another, three cut positions apart instead of two.',
-      ),
-      h(
-        'p',
-        {},
-        'The asymmetry in the layout — Alice commits to a, Bob commits to ¬b — buys neither player an advantage. It is bookkeeping about where the ring wraps.',
-      ),
+    disclosure('Why Alice is in the same position', aliceMirror()),
+  );
+}
+
+/**
+ * The mirror case, computed rather than asserted.
+ *
+ * This block used to be two paragraphs of prose claiming Alice is in the same
+ * position as Bob, and naming a rotation offset — the wrong one, as it happens: it is
+ * Alice's own two layouts that sit three cut positions apart, and Bob's that sit two
+ * apart. Both offsets are now read out of `shiftFor`, and Alice's advantage out of
+ * `aliceLeak`, so neither number can drift away from the protocol again.
+ */
+function aliceMirror(): HTMLElement {
+  const aliceGap = shiftFor({ a: 0, b: 0 }, toKey(layout({ a: 1, b: 0 })));
+  const bobGap = shiftFor({ a: 0, b: 0 }, toKey(layout({ a: 0, b: 1 })));
+  const atA0 = aliceLeak(UNIFORM_CUT).find((l) => l.known === 0)!;
+
+  return h(
+    'div',
+    {},
+    h(
+      'p',
+      {},
+      'Nothing above is special to Bob. Alice holding 0 learns nothing about Bob’s bit either, by the same argument with the roles swapped — and it is the same code: ',
+      code('aliceLeak'),
+      ' is ',
+      code('bobLeak'),
+      ' with the two inputs exchanged.',
+    ),
+    statTile(
+      'Alice guesses Bob’s bit correctly',
+      `${(atA0.success * 100).toFixed(1)}%`,
+      'Alice holds 0, so the answer tells her nothing either',
+      atA0.tv === 0 ? 'ok' : 'alarm',
+    ),
+    atA0.tv === 0
+      ? verdict('pass', 'the cards told Alice nothing about Bob’s bit', 'No leak')
+      : verdict(
+          'alarm',
+          `the cards moved Alice from 50% to ${(atA0.success * 100).toFixed(1)}%`,
+          'Leaking',
+        ),
+    h(
+      'p',
+      {},
+      `The two directions are not literally identical, and the difference is worth knowing: with Bob holding 0, Alice’s two possible layouts are the same ring rotated by ${aliceGap}; with Alice holding 0, Bob’s two are the same ring rotated by ${bobGap}. Both ${aliceGap} and ${bobGap} generate Z5, so in both directions the leak vanishes exactly at the uniform cut and nowhere else.`,
+    ),
+    h(
+      'p',
+      {},
+      'The asymmetry in the layout — Alice commits to a, Bob commits to ¬b — buys neither player an advantage. It is bookkeeping about where the ring wraps.',
     ),
   );
 }
