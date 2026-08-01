@@ -10,7 +10,7 @@ alone.
 
 ## What It Is
 
-An interactive implementation of **den Boer's five-card trick** (CRYPTO '89), a two-party
+An interactive implementation of **den Boer's five-card trick** (EUROCRYPT '89), a two-party
 secure multi-party computation protocol for a single AND gate. Alice holds a secret bit
 `a`, Bob holds a secret bit `b`, and between them they learn `a AND b` — and nothing else.
 
@@ -145,7 +145,7 @@ You can:
 ## Real-World Usage
 
 Card-based cryptography is a small but live research area. den Boer's 1989 construction
-started it; Mizuki and Sone's four-card AND (2009) reduced the deck; Koch and Walzer's 2022
+started it; Mizuki, Kumamoto and Sone's four-card AND (2012) reduced the deck; Koch and Walzer's 2022
 survey collects the protocol zoo, the shuffle models, and the lower bounds on how few cards
 a gate can need. The practical uses are education, unplugged-computing outreach, and
 low-tech settings where a physical procedure is more trustworthy to its participants than a
@@ -241,6 +241,6 @@ rounds, which are single draws from the CSPRNG.
 
 ---
 
-*One of 120+ browser demos in the [Crypto Lab](https://crypto-lab.systemslibrarian.dev/) suite.*
+*One of 170+ browser demos in the [Crypto Lab](https://crypto-lab.systemslibrarian.dev/) suite.*
 
 *"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31*

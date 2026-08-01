@@ -700,7 +700,7 @@ function toPair(pair: readonly ['spade' | 'heart', 'spade' | 'heart']): string {
   return pair.map((c) => (c === 'spade' ? '♠' : '♥')).join('');
 }
 
-// [extension] point — a four-card AND (Mizuki–Sone 2009) drops the dealer's heart and
+// [extension] point — a four-card AND (Mizuki–Kumamoto–Sone 2012) drops the dealer's heart and
 // replaces the cut with a random bisection of two card pairs, reading the answer off a
 // two-card block. It would enter here as a second `steps()` script; `layout`/`cut` in
 // protocol.ts and the orbit enumeration in necklace.ts are the only other places that

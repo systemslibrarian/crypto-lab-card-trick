@@ -517,7 +517,7 @@ function scopeSection(): HTMLElement {
         'li',
         {},
         h('strong', {}, 'Fewer cards. '),
-        'Mizuki and Sone (2009) compute AND with four cards by replacing the cut with a random bisection — a different shuffle, not a smaller version of this one. The lower bounds on how few cards a gate can need are their own literature.',
+        'Mizuki, Kumamoto and Sone (2012) compute AND with four cards by replacing the cut with a random bisection — a different shuffle, not a smaller version of this one. The lower bounds on how few cards a gate can need are their own literature.',
       ),
       h(
         'li',
@@ -552,7 +552,7 @@ function scopeSection(): HTMLElement {
         h(
           'li',
           {},
-          h('strong', {}, '2009 — Mizuki and Sone. '),
+          h('strong', {}, '2012 — Mizuki, Kumamoto and Sone. '),
           'Four cards for the same gate, using a random bisection in place of the cut. Fewer cards, a different shuffle, a different proof.',
         ),
         h(

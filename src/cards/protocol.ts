@@ -1,5 +1,5 @@
 /**
- * den Boer's five-card trick (CRYPTO '89) — the protocol itself.
+ * den Boer's five-card trick (EUROCRYPT '89) — the protocol itself.
  *
  * Two players hold one secret bit each. Using five playing cards — three hearts and
  * two spades — they learn `a AND b` and nothing else. There is no encryption here to
@@ -138,7 +138,7 @@ export function fromKey(key: string): Sequence | null {
  * C(5,2) = 10 rows. Small enough that the lab never has to sample anything — every
  * probability on the page is a count over this set, not a Monte Carlo estimate.
  *
- * [extension] point — a four-card protocol (Mizuki–Sone 2009) has C(4,2) = 6 rows
+ * [extension] point — a four-card protocol (Mizuki–Kumamoto–Sone 2012) has C(4,2) = 6 rows
  * and acts by Z4 rather than Z5; this enumeration and `necklace.ts` are where a
  * second deck size would be parameterised.
  */
