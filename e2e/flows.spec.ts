@@ -29,12 +29,19 @@ test.describe('the stage — the first screen', () => {
    * The demo's whole premise is that you perform the trick before reading about it.
    * Before the redesign the first card sat 2688px down a 844px phone screen; this is
    * the guard that keeps it above the fold, and it is deliberately strict.
+   *
+   * The font is pinned to a deliberately WIDE stack rather than left to `system-ui`.
+   * A phone screen's budget is spent on wrapped lines, and system-ui is narrow on
+   * macOS and wide on the Linux CI runner — a 44px difference, which is most of the
+   * headroom. Measuring the worst case everywhere means this passes or fails for the
+   * same reason on a laptop as in CI, instead of only failing after a push.
    */
   test('a full card row and the primary action are inside the first viewport at 390x844', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('.');
+    await page.addStyleTag({ content: ':root{--sans:Verdana,"DejaVu Sans",sans-serif !important}' });
     const box = async (sel: string) => {
       const b = await page.locator(sel).first().boundingBox();
       expect(b, `${sel} should be laid out`).not.toBeNull();
