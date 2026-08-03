@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  * `deploy.yml`'s gate step invokes — so a functional regression blocks the deploy just
  * as an accessibility one does. Firefox and WebKit run in a separate workflow.
  *
- * Port 4231 is unique to this lab across the fleet (never the Vite default 4173,
+ * Port 4613 is unique to this lab across the fleet (never the Vite default 4173,
  * which every sibling lab would otherwise share).
  */
 export default defineConfig({
@@ -22,7 +22,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:4231/crypto-lab-card-trick/',
+    baseURL: 'http://localhost:4613/crypto-lab-card-trick/',
   },
   /**
    * Two tiers, because the Pages deploy and cross-browser coverage have different
@@ -66,8 +66,8 @@ export default defineConfig({
     // Without the build, a source change that fails to compile leaves the last
     // good bundle in place and the suite passes green against code that no
     // longer builds — which silently invalidates mutation checks.
-    command: 'npm run build && npm run preview -- --port 4231 --strictPort',
-    url: 'http://localhost:4231/crypto-lab-card-trick/',
+    command: 'npm run build && npm run preview -- --port 4613 --strictPort',
+    url: 'http://localhost:4613/crypto-lab-card-trick/',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
