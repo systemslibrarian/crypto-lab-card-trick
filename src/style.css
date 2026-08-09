@@ -47,9 +47,19 @@
   --card-back: #7a1620;
   --card-back-line: #b9505a;
 
-  /* Chart series. Validated for CVD separation against this surface. */
+  /* Chart series. Validated for CVD separation against this surface — as
+     GRAPHICS, which is a 3:1 requirement (WCAG 1.4.11). The chart also draws
+     `cards` and `circuit` as direct 12px/700 TEXT labels at the right edge, and
+     text is 4.5:1: --series-cards measured 4.14:1 and --series-circuit 4.23:1
+     against --surface-2, so neither could carry a label. Same split the palette
+     already makes between --accent and --accent-text, and for the same reason.
+     The lines and markers keep the validated series colours; only the glyphs
+     take the lighter ink. Colour is not carrying identity here either way — each
+     line is labelled with its own name. */
   --series-cards: #ef4444;
   --series-circuit: #3f86e0;
+  --series-cards-text: #f77070; /* 5.6:1 on --surface-2, 6.8:1 on --bg */
+  --series-circuit-text: #5d95e4; /* 5.1:1 on --surface-2, 6.2:1 on --bg */
 
   --radius: 10px;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -81,6 +91,12 @@
 
   --series-cards: #c62828;
   --series-circuit: #1a56db;
+  /* The light theme's series colours already clear 4.5:1 as text on
+     --surface-2 (4.75:1 and 5.21:1), so the label ink is the series ink here.
+     The tokens still exist so the chart's rules do not have to know which theme
+     they are in. */
+  --series-cards-text: #c62828;
+  --series-circuit-text: #1a56db;
 }
 
 html {
@@ -876,8 +892,9 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
 .chart-marker-cards { fill: var(--series-cards); }
 .chart-marker-circuit { fill: var(--series-circuit); }
 .chart-label { font-size: 12px; font-weight: 700; font-family: var(--sans); }
-.chart-label-cards { fill: var(--series-cards); }
-.chart-label-circuit { fill: var(--series-circuit); }
+/* Labels take the text ink, not the series ink — see the note on the tokens. */
+.chart-label-cards { fill: var(--series-cards-text); }
+.chart-label-circuit { fill: var(--series-circuit-text); }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.82rem; color: var(--text-dim); justify-content: center; }
 .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
 .legend-swatch { display: inline-block; width: 1.3rem; height: 0; border-radius: 0; }

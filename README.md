@@ -174,7 +174,7 @@ npm run dev        # http://localhost:5173/crypto-lab-card-trick/
 ```bash
 npm test           # unit tests, incl. the protocol KATs
 npm run build      # typecheck + production build
-npm run test:a11y  # axe WCAG 2.1 A/AA gate + Chromium flows (needs a build first)
+npm run test:a11y  # WCAG 2.1 A/AA gate (2 themes x 2 viewports) + Chromium flows
 npm run test:e2e:all   # every flow across Chromium, Firefox and WebKit
 ```
 
@@ -224,9 +224,21 @@ complete card row and the reveal button must sit inside the first 844px of a 390
 screen.** An early version of this page put the first card 2688px down — more than three
 phone screens below the hero — and no amount of correctness made up for it.
 
-**Accessibility gate.** `@axe-core/playwright` scans the production build for **zero** WCAG
-2.1 A/AA violations in **both** themes, after a driver has walked every exhibit into its
-post-interaction state. The GitHub Pages deploy is blocked if it fails. State is never
+**Accessibility gate.** The production build is driven the way a visitor drives it — the
+guided tour started and exited, the stage cut and revealed with every bit combination and
+every cut depth, the walkthrough opened by its summary and walked, the orbit applied from
+both starting groups, every dealer preset plus a hand-built distribution, both answers of
+the guessing game, the chart moved across its crossover at every security parameter, and
+every exit question and the matching task answered wrong and then right — and **scanned
+after every single step**, in both themes at 1280px and 380px. Tabs are switched (including
+by ArrowRight on the tablist), never un-hidden; disclosures are opened by their summaries;
+and nothing is injected into the page, so the lab's own `prefers-reduced-motion` block is
+exercised rather than bypassed. `violations` is not the whole oracle — the gate also fails
+on axe's `incomplete` bucket, on an arithmetic composite-aware contrast measurement that
+covers the SVG chart's own glyphs (they live inside a `role="img"`, where axe's contrast
+rule never looks), on text-control border contrast (WCAG 1.4.11), on any scrolling region
+with no keyboard route, on any horizontal document overflow, and on any visible text left
+at `opacity: 0`. The GitHub Pages deploy is blocked if it fails. State is never
 carried by colour alone — every verdict is icon + word + colour, every card shows its pip
 glyph and an off-screen suit name, and the comparison chart's two series differ in dash
 pattern and carry direct labels as well as hue.
