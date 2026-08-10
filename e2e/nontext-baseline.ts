@@ -1,0 +1,33 @@
+/**
+ * Known WCAG 1.4.11 / generated-content findings in this lab, captured through
+ * the gate's own path so the baseline and the check cannot disagree.
+ *
+ * THIS FILE IS A TO-DO LIST, NOT A SET OF EXEMPTIONS. The gate ratchets on it:
+ *   - a finding NOT listed here fails the run, so a regression cannot land;
+ *   - a listed finding whose ratio gets WORSE fails, so the list cannot rot;
+ *   - a listed finding that no longer appears ALSO fails, so a fixed entry must
+ *     be deleted and the file can only shrink toward empty.
+ *
+ * `unverified: true` marks an absolutely-positioned pseudo-element, whose ratio
+ * is NOT trustworthy — hand-measure before acting on it.
+ */
+export const NONTEXT_BASELINE: Record<
+  string,
+  { ratio: number; required: number; unverified: boolean }
+> = {
+  "control-boundary|a.cl-btn": { ratio: 1.62, required: 3.0, unverified: false },
+  "control-boundary|button#cl-theme-toggle.cl-btn.cl-icon": { ratio: 1.62, required: 3.0, unverified: false },
+  "control-boundary|button#tab-break.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
+  "control-boundary|button#tab-compare.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
+  "control-boundary|button#tab-leak.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
+  "control-boundary|button#tab-protocol.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
+  "control-boundary|button#tab-protocol.tab-btn.tab-done": { ratio: 1.0, required: 3.0, unverified: false },
+  "control-boundary|button#tab-why.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
+  "control-boundary|button.btn.btn-ghost": { ratio: 1.5, required: 3.0, unverified: false },
+  "control-boundary|button.btn.btn-ghost.check-opt": { ratio: 1.35, required: 3.0, unverified: false },
+  "control-boundary|button.btn.btn-ghost.predict-opt": { ratio: 1.45, required: 3.0, unverified: false },
+  "control-boundary|button.btn.btn-ghost.preset-btn": { ratio: 1.52, required: 3.0, unverified: false },
+  "control-boundary|button.btn.btn-ghost.tour-toggle": { ratio: 1.5, required: 3.0, unverified: false },
+  "control-boundary|button.btn.seg-btn": { ratio: 1.0, required: 3.0, unverified: false },
+  "control-boundary|button.btn.seg-btn.orbit-row-btn": { ratio: 1.52, required: 3.0, unverified: false }
+};
