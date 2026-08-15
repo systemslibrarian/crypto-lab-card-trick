@@ -17,12 +17,6 @@ export const NONTEXT_BASELINE: Record<
 > = {
   "control-boundary|a.cl-btn": { ratio: 1.62, required: 3.0, unverified: false },
   "control-boundary|button#cl-theme-toggle.cl-btn.cl-icon": { ratio: 1.62, required: 3.0, unverified: false },
-  "control-boundary|button#tab-break.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
-  "control-boundary|button#tab-compare.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
-  "control-boundary|button#tab-leak.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
-  "control-boundary|button#tab-protocol.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
-  "control-boundary|button#tab-protocol.tab-btn.tab-done": { ratio: 1.0, required: 3.0, unverified: false },
-  "control-boundary|button#tab-why.tab-btn": { ratio: 1.0, required: 3.0, unverified: false },
   "control-boundary|button.btn.btn-ghost": { ratio: 1.5, required: 3.0, unverified: false },
   "control-boundary|button.btn.btn-ghost.check-opt": { ratio: 1.35, required: 3.0, unverified: false },
   "control-boundary|button.btn.btn-ghost.predict-opt": { ratio: 1.45, required: 3.0, unverified: false },
