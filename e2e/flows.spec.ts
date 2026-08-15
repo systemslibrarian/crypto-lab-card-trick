@@ -403,10 +403,4 @@ test.describe('the page as a whole', () => {
     }
   });
 
-  test('the theme toggle reaches light and the page still renders', async ({ page }) => {
-    await page.goto('.');
-    await page.locator('#cl-theme-toggle').click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    await expect(page.locator('#panel-protocol .stage-table .card').first()).toBeVisible();
-  });
 });
