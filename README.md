@@ -199,7 +199,7 @@ npm run test:e2e:all   # every flow across Chromium, Firefox and WebKit
 
 ## Build & Verify
 
-**138 unit tests** (Vitest), all passing:
+**139 unit tests** (Vitest), all passing:
 
 | File | Tests | What it checks |
 | --- | --- | --- |
@@ -207,7 +207,7 @@ npm run test:e2e:all   # every flow across Chromium, Firefox and WebKit
 | `src/cards/vectors.test.ts` | 32 | The **KATs** — all 20 rows of the protocol table plus the orbit and leakage vectors. |
 | `src/cards/analysis.test.ts` | 45 | Reveal distributions, total variation, the closed form TV(w, w∘τ³), leakage in bits, posteriors, the observer's advantage, and the row-by-row evidence view — including 200 randomised distributions checking that only the uniform cut leaks nothing, and a check that the evidence rows sum back to exactly the headline advantage. |
 | `src/cards/necklace.test.ts` | 15 | The orbit partition: two blocks of five, closed under the cut, constant output within a block. |
-| `src/cards/shuffle.test.ts` | 20 | Rejection sampling discards the six biasing bytes; the weighted sampler never returns an unweighted depth and never silently falls back to "no cut". |
+| `src/cards/shuffle.test.ts` | 21 | Rejection sampling discards the six byte values 250–255, so the 250 that remain map evenly onto the five cuts; the weighted sampler never returns an unweighted depth and never silently falls back to "no cut". |
 
 **Known-answer tests.** den Boer's protocol is physical, so no vector file exists to
 download. `src/cards/vectors.ts` is the honest equivalent: the **entire** input/output

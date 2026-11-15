@@ -101,8 +101,8 @@ export const cryptoBytes: ByteSource = (n) => crypto.getRandomValues(new Uint8Ar
 /**
  * A uniform cut in Z5, by rejection sampling.
  *
- * `byte % 5` would be biased: 256 is not a multiple of 5, so depths 0 and 1 would
- * come up 52 times per 256 draws and depths 2–4 only 51. The bias is tiny and it is
+ * `byte % 5` would be biased: 256 is not a multiple of 5, so depth 0 would come up
+ * 52 times per 256 draws and depths 1–4 only 51. The bias is tiny and it is
  * still a bias — and this lab's entire point is that a cut which is *almost* uniform
  * leaks. Discarding the 6 values at or above 250 makes the remaining range an exact
  * multiple of 5, so the result is uniform rather than nearly so.

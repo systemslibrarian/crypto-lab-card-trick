@@ -72,6 +72,18 @@ describe('uniformShift — rejection sampling', () => {
     }
   });
 
+  it('counts the bias it avoids: byte % 5 favours depth 0 alone', () => {
+    // What the comment on uniformShift claims, counted rather than asserted:
+    // over all 256 byte values `byte % 5` gives depth 0 fifty-two times and
+    // every other depth fifty-one, and discarding 250..255 leaves fifty each.
+    const all = [0, 0, 0, 0, 0]
+    for (let b = 0; b < 256; b += 1) all[b % 5] += 1
+    expect(all).toEqual([52, 51, 51, 51, 51])
+    const kept = [0, 0, 0, 0, 0]
+    for (let b = 0; b < 250; b += 1) kept[b % 5] += 1
+    expect(kept).toEqual([50, 50, 50, 50, 50])
+  })
+
   it('gives every depth over a long draw, and no depth outside Z5', () => {
     const seen = new Set<number>();
     for (let i = 0; i < 200; i++) seen.add(uniformShift());
