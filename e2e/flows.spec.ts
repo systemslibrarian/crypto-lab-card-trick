@@ -263,6 +263,28 @@ test.describe('breaking the shuffle', () => {
     await expect(page.locator('#panel-break .headline-host .verdict-alarm')).toBeVisible();
   });
 
+  test('the odds follow valid weights and are withdrawn when no cut can be drawn', async ({ page }) => {
+    await page.goto('.');
+    await page.locator('#tab-break').click();
+    const panel = page.locator('#panel-break');
+    for (const [i, weight] of [9, 10, 10, 10, 10].entries()) {
+      await panel.locator(`#cut-weight-${i}`).fill(String(weight));
+    }
+    await expect(panel.locator('.dealer-col-live .dealer-figure')).toHaveText('51.0%');
+    await btn(page, '#panel-break', 'Deal a round').click();
+    for (let i = 0; i < 5; i++) await panel.locator(`#cut-weight-${i}`).fill('0');
+    await expect(panel.getByRole('status').filter({ hasText: 'All five weights are zero' })).toBeVisible();
+    for (const results of ['.headline-host', '.evidence-host', '.detail-host', '.guess-host']) {
+      await expect(panel.locator(results)).toBeEmpty();
+    }
+    await expect(panel.locator('.range-value', { hasText: '—' })).toHaveCount(5);
+    await panel.locator('#cut-weight-2').fill('1');
+    await expect(panel.locator('.dealer-col-live .dealer-figure')).toHaveText('100.0%');
+    await expect(btn(page, '#panel-break', 'Deal a round')).toBeVisible();
+    await btn(page, '#panel-break', 'Uniform cut').click();
+    await expect(panel.locator('.dealer-col-live .dealer-figure')).toHaveText('50.0%');
+  });
+
   test('the bits and the bystander are available, one disclosure away', async ({ page }) => {
     await page.goto('.');
     await page.locator('#tab-break').click();
@@ -281,7 +303,7 @@ test.describe('breaking the shuffle', () => {
     await btn(page, '#panel-break', 'Alice held 0').click();
     await expect(page.locator('#panel-break .guess-verdict')).toContainText('Running score: ');
     await expect(page.locator('#panel-break .guess-out')).toContainText(
-      'The ceiling for this dealer is 50.0%',
+      'The best expected success rate for this dealer is 50.0%',
     );
   });
 

@@ -124,7 +124,7 @@ You can:
   that the three answer-0 rows are identical.
 - Make the dealer sloppy and watch the guarantee collapse — including the case where the
   cut is random and useless.
-- Play Bob: guess Alice's bit from the table, round after round, against a ceiling of 50%.
+- Play Bob and compare your observed score with the best expected success rate for the chosen dealer. A secret uniform cut gives Bob 50% when he holds 0 and Alice’s bit is fair.
 - Compare the whole thing with a garbled circuit as the attacker's budget grows.
 
 ---
@@ -135,8 +135,8 @@ You can:
 | --- | --- | --- |
 | **The cut is not uniform** | Alice's two layouts sit three cut positions apart, so the rows Bob sees are the cut distribution and the cut distribution rotated by three. They match only when the distribution is invariant under rotation by 3 — and 3 generates Z5, so only the uniform cut qualifies. | *Break it*, every preset |
 | **The cut is random but lopsided** | "Random" is not the requirement. A dealer who cuts by 0 or 1, each half the time, puts Alice's 0 on two rows and her 1 on two entirely different rows: disjoint supports, one look, 100%. | *Break it*, “Lazy dealer” |
-| **The cut is nearly uniform** | Not nearly secure. Covering four of the five depths evenly still lifts Bob to 62.5%. The failure is not gradual in the way a security parameter is. | *Break it*, “Almost uniform” |
-| **A player peeks at a face-down card** | Total break, and the protocol has no defence at all. Its only assumption is that identical backs are indistinguishable; a peek is that assumption failing, not an attack on the maths. | Stated in-page; deliberately not modelled |
+| **The cut is nearly uniform** | Any bias loses perfect privacy. The size of the advantage varies continuously: four equally likely depths give Bob 62.5% success; weights of 9, 10, 10, 10 and 10 give 25/49, about 51.0%. | *Break it*, “Almost uniform” |
+| **A player peeks at a face-down card** | A peek can reveal extra information. What it reveals depends on the card and when it is seen. The proof assumes hidden faces, indistinguishable backs, correct placement and a secret uniform cut. | Stated in-page; deliberately not modelled |
 | **A player miscommits** | Encoding the wrong bit changes the answer without changing anything an observer could detect. Correctness here assumes honest placement — this is an honest-but-curious protocol, not a malicious-secure one. | Stated in-page |
 | **Confusing the output with a leak** | Bob holding 1 learns Alice's bit from the answer alone. Reporting that as a protocol leak is the standard way this gets explained badly, and it would make every AND protocol look broken. | *Privacy*, the two Bob cards |
 
@@ -174,7 +174,7 @@ npm run dev        # http://localhost:5173/crypto-lab-card-trick/
 ```bash
 npm test           # unit tests, incl. the protocol KATs
 npm run build      # typecheck + production build
-npm run test:a11y  # WCAG 2.1 A/AA gate (2 themes x 2 viewports) + Chromium flows
+npm run test:a11y  # WCAG 2.1 A/AA gate in the dark theme at two widths + Chromium flows
 npm run test:e2e:all   # every flow across Chromium, Firefox and WebKit
 ```
 
@@ -216,8 +216,8 @@ paper's construction, importing nothing from the implementation, plus the two or
 four hand-derived leakage figures. The *Why It Works* exhibit re-runs that comparison in
 the browser and shows the result.
 
-**60 end-to-end flow tests** (Playwright, Chromium desktop + a mobile viewport in the
-deploy gate; Firefox and WebKit in a separate workflow) assert that each exhibit renders
+**30 end-to-end scenarios** run in Chromium at desktop and mobile widths, in Firefox,
+and in WebKit. These Playwright checks gate the deployment and assert that each exhibit renders
 its result, that the leak/no-leak semantics reach the DOM, and that no exhibit scrolls the
 page sideways at 320px or at 200% zoom. One of them is a layout guard with teeth: **a
 complete card row and the reveal button must sit inside the first 844px of a 390px-wide
@@ -230,7 +230,7 @@ every cut depth, the walkthrough opened by its summary and walked, the orbit app
 both starting groups, every dealer preset plus a hand-built distribution, both answers of
 the guessing game, the chart moved across its crossover at every security parameter, and
 every exit question and the matching task answered wrong and then right — and **scanned
-after every single step**, in both themes at 1280px and 380px. Tabs are switched (including
+after every single step**, in the supported dark theme at 1280px and 380px. Tabs are switched (including
 by ArrowRight on the tablist), never un-hidden; disclosures are opened by their summaries;
 and nothing is injected into the page, so the lab's own `prefers-reduced-motion` block is
 exercised rather than bypassed. `violations` is not the whole oracle — the gate also fails

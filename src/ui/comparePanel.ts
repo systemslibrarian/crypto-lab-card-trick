@@ -177,7 +177,7 @@ function paintFigure(host: HTMLElement): void {
       h(
         'figcaption',
         {},
-        'How much better than a coin flip an attacker can do, against how much work they spend. The dashed line is what a security proof promises if its assumption holds; the solid line is an enumerated fact about ten card arrangements.',
+        'The solid line shows the advantage calculated from all ten card arrangements under a secret uniform cut. The dashed line illustrates how a generic guessing bound grows with the amount of work.',
       ),
     ),
     h(
@@ -491,11 +491,11 @@ function conclusionSection(): HTMLElement {
       line(
         'The card protocol does not care how much work you do.',
         'Every pair of secrets consistent with the answer produces the same distribution of rows, so the attacker is comparing two things that are equal.',
-        'You watched the three answer-0 columns hold at 20% each, and Bob’s ceiling sit at 50% however long you played.',
+        'You watched the three answer-0 columns agree in the Privacy panel for a secret uniform cut. Each possible row had probability 20%. When Bob holds 0 and Alice’s bit is fair, his best expected success rate is 50%.',
       ),
       line(
         'The circuit’s security is a parameter.',
-        'It is safe until an attacker can afford about 2^κ operations, and the whole design problem is choosing κ far enough ahead of the future.',
+        'The example bound reaches 1 at 2^κ operations. At that point it supplies no useful guarantee. The chart measures no attack on a particular circuit.',
         'You pushed the slider past 2^128 and watched the bound go to 1 while the card line did not move.',
       ),
       line(

@@ -53,7 +53,7 @@ import {
 interface State {
   /** Slider positions, 0–10 each. Normalised to a distribution on read. */
   raw: number[];
-  weights: CutWeights;
+  weights: CutWeights | null;
   presetId: string;
 }
 
@@ -79,10 +79,15 @@ export function renderBreakPanel(root: HTMLElement): void {
   const game = h('div', { class: 'guess-host' });
 
   const repaint = (): void => {
-    paintHeadline(headline);
-    paintEvidence(evidence);
-    paintDetail(detail);
-    paintGame(game, repaint);
+    const weights = state.weights;
+    if (!weights) {
+      for (const host of [headline, evidence, detail, game]) clear(host);
+      return;
+    }
+    paintHeadline(headline, weights);
+    paintEvidence(evidence, weights);
+    paintDetail(detail, weights);
+    paintGame(game, weights, repaint);
   };
 
   // Changing the dealer mid-round would leave a row on the table that was dealt under
@@ -121,8 +126,8 @@ export function renderBreakPanel(root: HTMLElement): void {
       'What this exhibit is and is not: it attacks the shuffle, which is the protocol’s stated assumption, and it does so with exact arithmetic over the whole state space. It does not model a player who peeks at a face-down card, a marked deck, a player who lies about which bit they encoded, or a shuffle whose depths are correlated between rounds. Those are all real attacks on a real card protocol and none of them is here.',
     ),
     bridge(
-      'The protocol is secure exactly when the cut is uniform, and the failure is total rather than gradual — a “nearly right” dealer is not nearly secure.',
-      'If the security is this brittle in the physical world, why does anyone care? What does it buy that a computer protocol cannot?',
+      'Perfect privacy requires a uniform cut. With a biased cut, the size of Bob’s advantage depends on the weights. Weights of 9, 10, 10, 10 and 10 give him about a 51.0% chance of guessing Alice’s bit when he holds 0.',
+      'What does a secret, uniform cut buy that a protocol relying on limited computing power cannot?',
       {
         label: 'Compare it with how computers do this →',
         onClick: () => document.getElementById('tab-compare')?.click(),
@@ -141,11 +146,9 @@ function controls(repaint: () => void): HTMLElement {
 
   const sync = (): void => {
     const next = normalise(state.raw);
-    // An all-zero vector keeps the previous distribution rather than silently becoming
-    // uniform, so the page never shows a "secure" verdict for a state nobody chose.
-    if (next) state.weights = next;
+    state.weights = next;
     state.raw.forEach((v, i) => {
-      values[i].textContent = `${(state.weights[i] * 100).toFixed(0)}%`;
+      values[i].textContent = next ? `${(next[i] * 100).toFixed(0)}%` : '—';
       sliders[i].value = String(v);
     });
     for (const b of presetButtons) {
@@ -208,7 +211,9 @@ function controls(repaint: () => void): HTMLElement {
   const story = h('p', { class: 'help', role: 'status', 'aria-live': 'polite' });
   const paintStory = (): void => {
     const p = CUT_PRESETS.find((q) => q.id === state.presetId);
-    story.textContent = p ? p.story : 'A distribution of your own. Every number below follows it.';
+    story.textContent = p?.story ?? (state.weights
+      ? 'A distribution of your own. Every number below follows it.'
+      : 'All five weights are zero. Raise at least one weight to define a dealer and deal a round.');
   };
   paintStory();
 
@@ -246,7 +251,7 @@ function controls(repaint: () => void): HTMLElement {
       h(
         'p',
         { class: 'help' },
-        'Drag any slider and the whole page follows. Setting every slider to the same value — whatever that value is — is the only configuration that comes out clean.',
+        'Equal positive weights make every cut equally likely. At least one weight must be positive to define a distribution.',
       ),
     ),
   );
@@ -254,8 +259,7 @@ function controls(repaint: () => void): HTMLElement {
 
 // ------------------------------------------------------- 1. does Bob win?
 
-function paintHeadline(host: HTMLElement): void {
-  const w = state.weights;
+function paintHeadline(host: HTMLElement, w: CutWeights): void {
   const bob = bobLeak(w).find((l) => l.known === 0)!;
   const clean = isUniform(w) && bob.tv === 0;
   const uniformBob = bobLeak(UNIFORM_CUT).find((l) => l.known === 0)!;
@@ -336,8 +340,8 @@ function paintHeadline(host: HTMLElement): void {
 
 // --------------------------------------------- 2. which rows became evidence?
 
-function paintEvidence(host: HTMLElement): void {
-  const rows = evidenceRows(state.weights);
+function paintEvidence(host: HTMLElement, weights: CutWeights): void {
+  const rows = evidenceRows(weights);
   const tells = rows.filter((r) => r.points !== null);
 
   clear(host);
@@ -405,8 +409,7 @@ function paintEvidence(host: HTMLElement): void {
 
 // ----------------------------------- 3. the rest of the numbers, on request
 
-function paintDetail(host: HTMLElement): void {
-  const w = state.weights;
+function paintDetail(host: HTMLElement, w: CutWeights): void {
   const bits = excessLeakageBits(w);
   const alice = aliceLeak(w).find((l) => l.known === 0)!;
   const obs = observerSuccess(w);
@@ -547,13 +550,13 @@ function derivation(): HTMLElement {
  * around 50% no matter how carefully anyone plays — which is a far more convincing
  * demonstration of "there is nothing to learn" than the word "zero".
  */
-function paintGame(host: HTMLElement, repaint: () => void): void {
+function paintGame(host: HTMLElement, weights: CutWeights, repaint: () => void): void {
   const out = h('div', { class: 'guess-out', role: 'status', 'aria-live': 'polite' });
 
   const deal = (): void => {
     const alice = (crypto.getRandomValues(new Uint8Array(1))[0] & 1) as Bit;
     const inputs: Inputs = { a: alice, b: 0 };
-    const shift = drawShift(state.weights);
+    const shift = drawShift(weights);
     tally.pending = { alice, shift, rowKey: toKey(run(inputs, shift).revealed) };
     paintRound();
   };
@@ -638,7 +641,7 @@ function paintGame(host: HTMLElement, repaint: () => void): void {
           h(
             'p',
             { class: 'help' },
-            `${tally.correct} correct out of ${tally.rounds} — ${((tally.correct / tally.rounds) * 100).toFixed(0)}%. The ceiling for this dealer is ${(bobLeak(state.weights).find((l) => l.known === 0)!.success * 100).toFixed(1)}%.`,
+            `Across all rounds played: ${tally.correct} correct out of ${tally.rounds} — ${((tally.correct / tally.rounds) * 100).toFixed(0)}%. The best expected success rate for this dealer is ${(bobLeak(weights).find((l) => l.known === 0)!.success * 100).toFixed(1)}%.`,
           ),
         );
       }

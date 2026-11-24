@@ -54,7 +54,7 @@ export const CUT_PRESETS: readonly CutPreset[] = [
   {
     id: 'human',
     label: 'A human trying to be random',
-    story: 'People asked to pick "randomly" favour small numbers. This is what that looks like.',
+    story: 'Illustrative weights favor smaller cuts. These values are a teaching example, not measurements of human dealers.',
     weights: [0.4, 0.25, 0.15, 0.12, 0.08],
   },
   {
@@ -81,7 +81,7 @@ export function presetById(id: string): CutPreset {
  * The UI hands over slider positions, which are integers that can all be zero while
  * the learner is dragging. An all-zero vector is not a distribution, and quietly
  * returning uniform there would show a "no leak" result for a state the learner
- * never chose — so it is rejected and the caller keeps the previous distribution.
+ * never chose — so it returns null until a positive weight defines a distribution.
  */
 export function normalise(raw: readonly number[]): CutWeights | null {
   if (raw.length !== 5 || raw.some((x) => !Number.isFinite(x) || x < 0)) return null;
