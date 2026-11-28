@@ -101,9 +101,10 @@ and this protocol is its origin point.
 
 **Do NOT use it** for anything real. It computes one AND gate, for exactly two people, who
 must be in the same room, with a deck of cards and a dealer both of them trust to cut
-uniformly. It composes into nothing: the reveal destroys the commitments, so you cannot
-feed the output into another gate. If you need secure computation, you need a garbled
-circuit or a secret-sharing protocol — see [Related Demos](#related-demos).
+uniformly. In this den Boer protocol, turning the cards face up reveals the AND result.
+A circuit that needs a hidden intermediate value therefore cannot use that output.
+Committed-format card protocols use different shuffle and reveal rules to leave the result
+face down, ready to serve as an input to the next gate.
 
 **Do NOT conclude** that information-theoretic security is strictly better than
 computational security. It is strictly *stronger as an assumption* and, here, bought with
