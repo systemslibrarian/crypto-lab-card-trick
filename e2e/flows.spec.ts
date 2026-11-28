@@ -259,6 +259,7 @@ test.describe('breaking the shuffle', () => {
     await page.goto('.');
     await page.locator('#tab-break').click();
     await btn(page, '#panel-break', 'Almost uniform').click();
+    await expect(page.locator('#panel-break').getByText(/two independent cuts before revealing/)).toContainText('53.125%');
     await expect(page.locator('#panel-break .dealer-col-live .dealer-figure')).toHaveText('62.5%');
     await expect(page.locator('#panel-break .headline-host .verdict-alarm')).toBeVisible();
   });

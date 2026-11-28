@@ -48,7 +48,7 @@ export const CUT_PRESETS: readonly CutPreset[] = [
   {
     id: 'almost',
     label: 'Almost uniform — four depths',
-    story: 'A dealer who never cuts all the way round: depths 0–3 only, evenly.',
+    story: 'One cut chooses depths 0–3 equally. Bob’s best success rate is 62.5% when he holds 0 and Alice’s bit is fair. If the dealer makes two independent cuts before revealing any cards, the depths add modulo five. Only one final depth occurs four times among the 16 ordered pairs; the other four occur three times each. Bob’s best success rate then falls to 53.125%.',
     weights: [0.25, 0.25, 0.25, 0.25, 0],
   },
   {
